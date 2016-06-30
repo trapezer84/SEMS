@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TeacherDAO">
+
+	<select id="getTeacherInfo" parameterType="string" resultType="TeacherVO">
+		SELECT	T.MBR_ID memberId
+				, T.COMP_NM companyName
+				, T.BUIS_NMB businessNumber
+				, T.ANNUAL annual
+				, M.NM name
+				, M.PHONE_NMB phoneNumber
+		FROM	TCHR_INFO T
+				, MBR M
+		WHERE	M.ID = T.MBR_ID
+		AND		M.ID = #{ memberId }
+	</select>
+	
+	<select id="getTeacherEducationHistory" parameterType="string" resultType="TeacherEduHistoryVO">
+		SELECT	TEH_ID id
+				, STR_DATE startDate
+				, END_DATE endDate
+				, EDU_NM educationName
+				, EDU_LOC educationLocation
+		FROM	TCHR_EDU_HTR
+		WHERE	MBR_ID = #{ memberId }
+	</select>
+	
+	<select id="getTeacherProjectHistory" parameterType="string" resultType="ProjectHistoryVO">
+		SELECT	TPH_ID id
+				, STR_DATE startDate
+				, END_DATE endDate
+				, PROJ_NM projectName
+				, PROJ_LOC projectLocation
+		FROM	TCHR_PROJ_HTR
+		WHERE	MBR_ID = #{ memberId }
+	</select>
+	
+	<select id="getTeacherBook" parameterType="string" resultType="TeacherBookVO">
+		SELECT	TB_ID id
+				, BOOK_NM bookName
+				, BOOK_COMP bookCompany
+		FROM	TCHR_BOOK
+		WHERE	MBR_ID = #{ memberId }
+	</select>
+	
+	<select id="getEducationHistory" parameterType="string" resultType="EducationVO">
+		SELECT	EDU_ID educationId
+				, EDU_CTGR educationCategory
+				, EDU_TTL educationTitle
+				, MBR_ID memberId
+				, MAX_MBR maxMember
+				, EDU_LOC educationLocation
+				, EDU_CLCM educationCurriculum
+				, EDU_INTR educationIntroduce
+				, SRT_DATE startDate
+				, END_DATE endDate
+				, START_TM startTime
+				, END_TM endTime
+				, EDU_TP educationType
+				, COST cost
+		FROM	EDU_INFO
+		WHERE	MBR_ID = #{ memberId }
+	</select>
+	
+	<select id="getTeacherEducationGrade" parameterType="string" resultType="_double">
+		SELECT  NVL(AVG(RATIO), 0)
+		FROM    MBR M
+		        , EDU_INFO EI
+		        , EDU_HTR EH
+		WHERE   M.ID = #{ memberId }
+		AND     M.ID = EI.MBR_ID
+		AND     EI.EDU_ID = EH.EDU_ID
+	</select>
+	
+	<select id="getOneTeacherInfo" parameterType="string" resultType="TeacherVO">
+		SELECT	T.MBR_ID memberId
+				, NM name
+				, COMP_NM companyName
+				, BUIS_NMB businessNumber
+				, ANNUAL annual
+		FROM 	TCHR_INFO T
+				, MBR M
+		WHERE	T.MBR_ID = #{memberId}
+		AND		T.MBR_ID = M.ID
+	</select>
+	<select id="getOneTeacherBookInfo" parameterType="string" resultType="TeacherBookVO">
+		SELECT	TB_ID id
+				, BOOK_NM bookName
+				, BOOK_COMP bookCompany
+		FROM	TCHR_BOOK
+		WHERE	MBR_ID = #{memberId}
+	</select>
+	<select id="getOneTeacherProjectHistoryVO" parameterType="string" resultType="ProjectHistoryVO">
+		SELECT	TPH_ID id
+				, STR_DATE startDate
+				, END_DATE endDate
+				, PROJ_NM projectName
+				, PROJ_LOC projectLocation
+		FROM 	TCHR_PROJ_HTR
+		WHERE	MBR_ID = #{memberId}
+	</select>
+	<select id="getOneEducationHistoryVO" parameterType="string" resultType="TeacherEduHistoryVO">
+		SELECT	TEH_ID id
+				, STR_DATE startDate
+				, END_DATE endDate
+				, EDU_NM  educationName
+				, EDU_LOC educationLocation
+		FROM 	TCHR_EDU_HTR
+		WHERE	MBR_ID = #{memberId}
+	</select>
+	<update id="doTeacherInfoModifyAction" parameterType="TeacherVO">
+		UPDATE	TCHR_INFO
+		SET		MBR_ID   = #{memberId}
+				<if test="companyName != null">
+				, COMP_NM  = #{companyName}
+				</if>
+				<if test="businessNumber != null">
+				, BUIS_NMB = #{businessNumber}
+				</if>
+				<if test="annual != null">
+				, ANNUAL   = #{annual}
+				</if>
+		WHERE	MBR_ID   = #{memberId}
+	</update>
+	<update id="doTeacherBookModifyAction" parameterType="teacherBookVO">
+		UPDATE	TCHR_BOOK
+		SET		TB_ID   = #{id}
+				<if test="bookName != null">
+				, BOOK_NM  = #{bookName}
+				</if>
+				<if test="bookCompany != null">
+				, BOOK_COMP = #{bookCompany}
+				</if>
+		WHERE	TB_ID   = #{id}
+	</update>
+	<update id="doTeacherProjectModifyAction" parameterType="projectHistoryVO">
+		UPDATE	TCHR_PROJ_HTR
+		SET		TPH_ID   = #{id}
+				<if test="startDate != null">
+				, STR_DATE  = #{startDate}
+				</if>
+				<if test="endDate != null">
+				, END_DATE = #{endDate}
+				</if>
+				<if test="projectName != null">
+				, PROJ_NM   = #{projectName}
+				</if>
+				<if test="projectLocation != null">
+				, PROJ_LOC   = #{projectLocation}
+				</if>
+		WHERE	TPH_ID   = #{id}
+	</update>
+	<update id="doTeacherEducationModifyAction" parameterType="TeacherEduHistoryVO">
+		UPDATE	TCHR_EDU_HTR
+		SET		TEH_ID   = #{id}
+				<if test="startDate != null">
+				, STR_DATE  = #{startDate}
+				</if>
+				<if test="endDate != null">
+				, END_DATE = #{endDate}
+				</if>
+				<if test="educationName != null">
+				, EDU_NM   = #{educationName}
+				</if>
+				<if test="educationLocation != null">
+				, EDU_LOC   = #{educationLocation}
+				</if>
+		WHERE	TEH_ID   = #{id}
+	</update>
+	<delete id="deleteTeacherBookEduProHistory" parameterType="hashMap">
+		DELETE
+		FROM	<if test="type == 'book'">
+				TCHR_BOOK
+				</if>
+				<if test="type == 'edu'">
+				TCHR_EDU_HTR
+				</if>
+				<if test="type == 'pro'">
+				TCHR_PROJ_HTR
+				</if>
+		WHERE	1=1
+		<if test="type == 'book'">
+		AND		TB_ID = #{id}
+		</if>
+		<if test="type == 'pro'">
+		AND		TPH_ID = #{id}
+		</if>
+		<if test="type == 'edu'">
+		AND		TEH_ID = #{id}
+		</if>
+	</delete>
+	<select id="getTeacherMemberInfo" resultType="MemberVO">
+		SELECT	ID id
+				, NM name
+		FROM	MBR
+		WHERE	MBR_TP = 'TR'
+		AND		ID NOT IN (
+                            SELECT  MBR_ID
+                            FROM    TCHR_INFO
+                           )
+	</select>
+	<insert id="doInsertNewTeacher" parameterType="TeacherVO">
+		INSERT INTO TCHR_INFO	(
+								   MBR_ID
+								   , COMP_NM
+								   , BUIS_NMB
+								   , ANNUAL
+								) 
+		VALUES					( 
+									#{memberId}
+									, #{companyName}
+									, #{businessNumber}
+									, #{annual}
+								 )
+	</insert>
+	<insert id="doInsertTeacherBookHis" parameterType="TeacherBookVO">
+		INSERT INTO TCHR_BOOK	(
+								   TB_ID
+								   , MBR_ID
+								   , BOOK_NM
+								   , BOOK_COMP
+								) 
+		VALUES					( 
+									#{id}
+									, #{memberId}
+									, #{bookName}
+									, #{bookCompany}
+								 )
+	</insert>
+	<insert id="doInsertTeacherProHis" parameterType="ProjectHistoryVO">
+		INSERT INTO TCHR_PROJ_HTR	(
+									   TPH_ID
+									   , MBR_ID
+									   , STR_DATE
+									   , END_DATE
+									   , PROJ_NM
+									   , PROJ_LOC
+									) 
+		VALUES						( 
+										#{id}
+										, #{memberId}
+										, #{startDate}
+										, #{endDate}
+										, #{projectName}
+										, #{projectLocation}
+									 )
+	</insert>
+	<insert id="doInsertTeacherEduHis" parameterType="TeacherEduHistoryVO">
+		INSERT INTO TCHR_EDU_HTR	(
+									   TEH_ID
+									   , MBR_ID
+									   , STR_DATE
+									   , END_DATE
+									   , EDU_NM
+									   , EDU_LOC
+									) 
+		VALUES						( 
+										#{id}
+										, #{memberId}
+										, #{startDate}
+										, #{endDate}
+										, #{educationName}
+										, #{educationLocation}
+									 )
+	</insert>
+	<select id="bookNextSeq" resultType="_int">
+		SELECT	TB_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<select id="projHisNextSeq" resultType="_int">
+		SELECT	TPH_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<select id="eduHisNextSeq" resultType="_int">
+		SELECT	TEH_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<select id="nowDate" resultType="string">
+		SELECT	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		FROM	DUAL
+	</select>
+	
+	<select id="getTotalTeacherCount" resultType="_int">
+		SELECT	COUNT(MBR_ID)
+		FROM 	TCHR_INFO T
+				, MBR M
+		WHERE	T.MBR_ID = M.ID
+		<if test="searchType == 1 and searchType != null">
+			AND NM LIKE '%'||#{searchKeyword}||'%'
+		</if>
+		<if test="searchType == 2 and searchType != null">
+		 	AND	COMP_NM  LIKE '%'||#{searchKeyword}||'%'
+		</if>
+		
+	</select>
+	
+	<select id="getAllTeacher" parameterType="TeacherSearchVO" resultType="TeacherVO" >
+		SELECT	M.NM name
+				, COMP_NM companyName
+				, BUIS_NMB businessNumber
+				, ANNUAL annual
+				, MBR_ID memberId
+		FROM	MBR M
+				, 	(
+						SELECT	ROWNUM AS RNUM
+								, TCHR_INFO.*
+						FROM	 (
+									SELECT	*
+									FROM 	MBR M
+											,TCHR_INFO T
+									WHERE	M.ID = T.MBR_ID
+									<if test="searchType == 1 and searchType != null">
+									AND		M.NM LIKE '%'||#{searchKeyword}||'%'
+									</if>
+									<if test="searchType == 2 and searchType != null">
+									AND		T.COMP_NM LIKE '%'||#{searchKeyword}||'%'
+									</if>
+									ORDER	BY MBR_ID DESC
+								) TCHR_INFO
+						WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+					)	
+		WHERE 	M.ID = MBR_ID
+		AND		RNUM >= #{startIndex}		
+	</select>
+	
+ 
+	<select id="getAllTeacherBook" parameterType="TeacherSearchVO" resultType="TeacherBookVO">
+		SELECT	TB_ID id
+				, BOOK_NM bookName
+				, BOOK_COMP bookCompany
+		FROM	TCHR_BOOK
+		WHERE	MBR_ID = #{ memberId }
+	</select>
+
+	<delete id="doDeleteTeacher" parameterType="string" >
+		DELETE
+		FROM	TCHR_INFO
+		WHERE	MBR_ID = #{ memberId }
+	</delete>
+	<delete id="doDeleteProjectHistory" parameterType="string" >
+		DELETE
+		FROM	TCHR_PROJ_HTR
+		WHERE	MBR_ID = #{ memberId }
+	</delete>
+	<delete id="doDeleteEducationHistory" parameterType="string" >
+		DELETE
+		FROM	TCHR_EDU_HTR
+		WHERE	MBR_ID = #{ memberId }
+	</delete>
+	<delete id="doDeleteTeacherBook" parameterType="string" >
+		DELETE
+		FROM	TCHR_BOOK
+		WHERE	MBR_ID = #{ memberId }
+	</delete>
+	
+	<select id="getOneTeacherId" resultType="string" parameterType="string">
+			SELECT  MBR_ID
+			FROM    TCHR_INFO
+			WHERE  MBR_ID != #{ memberId }
+			AND     ROWNUM = 1
+	</select>
+
+</mapper>

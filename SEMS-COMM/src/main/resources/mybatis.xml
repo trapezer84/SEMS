@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD config 3.0//EN"
+					"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+	<typeAliases>
+		<typeAlias type="com.ktds.sems.member.vo.GrdtTpVO" alias="GrdtTpVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.MemberVO" alias="MemberVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.HighestEduTpVO" alias="HighestEduTpVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.LoginHistoryVO" alias="LoginHistoryVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.MbrTpVO" alias="MbrTpVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.CostVO" alias="CostVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.TimeVO" alias="TimeVO"/>
+		<typeAlias type="com.ktds.sems.menu.vo.MenuManageVO" alias="MenuManageVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.CategoryVO" alias="CategoryVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.CodeMngVO" alias="CodeMngVO"/>
+	</typeAliases>
+
+	<mappers>
+		<mapper resource="com/ktds/sems/member/dao/impl/sql/memberDAO.xml"/>
+		<mapper resource="com/ktds/sems/education/dao/impl/sql/educationDAO.xml"/>
+		<mapper resource="com/ktds/sems/menu/dao/impl/sql/menuDAO.xml"/>
+	</mappers>
+</configuration>

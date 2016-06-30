@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+					"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EducationDAO">
+	
+	<select id="getAllEduCost" resultType="CostVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	EDU_CST
+		ORDER	BY CD_ID DESC
+	</select>
+
+	<select id="getEduCostByCdId" parameterType="string" resultType="CostVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	EDU_CST
+		WHERE	CD_ID = #{cdId}
+	</select>
+	
+	<update id="modifyEduCost" parameterType="CostVO">
+		UPDATE	EDU_CST 
+		SET		CD_NM = #{cdNm}
+		WHERE 	CD_ID = #{cdId}
+	</update>
+	
+	<delete id="deleteEduCost" parameterType="string">
+		DELETE	
+		FROM	EDU_CST
+		WHERE 	CD_ID = #{cdId}
+	</delete>
+	
+	<insert id="insertEduCost" parameterType="CostVO">
+		INSERT INTO		EDU_CST (
+									CD_ID
+   									, CD_NM
+   								) 
+		VALUES 					( 	
+									#{cdId}
+									, #{cdNm}
+								 )
+	</insert>
+
+	<select id="validCategoryId" parameterType="CategoryVO" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		<if test="categoryType == 'large'">
+		FROM	LRG_CTGR
+		</if>
+		<if test="categoryType == 'medium'">
+		FROM	MED_CTGR
+		</if>
+		<if test="categoryType == 'small'">
+		FROM	SML_CTGR
+		</if>
+		WHERE	CD_ID = #{ categoryId }
+	</select>
+	
+	<select id="validCategoryName" parameterType="CategoryVO" resultType="_int">
+		SELECT	COUNT(CD_NM)
+		<if test="categoryType == 'large'">
+		FROM	LRG_CTGR
+		</if>
+		<if test="categoryType == 'medium'">
+		FROM	MED_CTGR
+		</if>
+		<if test="categoryType == 'small'">
+		FROM	SML_CTGR
+		</if>
+		WHERE	CD_NM = #{ categoryName }
+	</select>
+	
+	<insert id="addNewCategory" parameterType="CategoryVO">
+		INSERT INTO 
+		<if test="categoryType == 'large'">
+		LRG_CTGR	(	
+		</if>
+		<if test="categoryType == 'medium'">
+		MED_CTGR	(	L_CD_ID ,
+		</if>
+		<if test="categoryType == 'small'">
+		SML_CTGR	(	M_CD_ID ,
+		</if>
+						CD_ID
+						, CD_NM
+					)
+		VALUES 		( 
+						<if test="categoryType != 'large'">
+						#{ parentCategoryId } ,
+						</if>
+						#{ categoryId }
+						, #{ categoryName }
+				   	)
+	</insert>
+	
+	<select id="getAllLargeCategory" resultType="CategoryVO">
+		SELECT	CD_ID categoryId
+				, CD_NM categoryName
+		FROM	LRG_CTGR
+	</select>
+	
+	<select id="isExistCost" parameterType="CostVO" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	EDU_CST
+		WHERE	CD_ID = #{cdId}
+		OR		CD_NM = #{cdNm}
+	</select>
+	
+	<select id="isExistCostNm" parameterType="CostVO" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	EDU_CST
+		WHERE	CD_NM = #{cdNm}
+	</select>
+	
+	<select id="getAllEduTime" resultType="TimeVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	EDU_TIME
+	</select>
+	
+	<delete id="deleteEduTime" parameterType="string">
+		DELETE
+		FROM	EDU_TIME
+		WHERE	CD_ID = #{cdId}
+	</delete>
+	
+	<select id="isExistTimeNm" parameterType="TimeVO" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	EDU_TIME
+		WHERE	CD_NM = #{cdNm}
+	</select>
+	
+	<update id="modifyEduTime" parameterType="TimeVO">
+		UPDATE	EDU_TIME 
+		SET		CD_NM = #{cdNm}
+		WHERE 	CD_ID = #{cdId}
+	</update>
+	
+	<select id="getEduTimeByCdId" parameterType="string" resultType="TimeVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	EDU_TIME
+		WHERE	CD_ID = #{cdId}
+	</select>
+	
+	<select id="isExistTime" parameterType="TimeVO" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	EDU_TIME
+		WHERE	CD_ID = #{cdId}
+		OR		CD_NM = #{cdNm}
+	</select>
+	
+	<insert id="insertEduTime" parameterType="TimeVO">
+		INSERT INTO		EDU_TIME (
+									CD_ID
+   									, CD_NM
+   								) 
+		VALUES 					( 	
+									#{cdId}
+									, #{cdNm}
+								 )
+	</insert>
+	
+	
+	<select id="getChildCategory" parameterType="CategoryVO" resultType="CategoryVO">
+		SELECT	
+			<if test="categoryType == 'large'">
+				L_CD_ID
+			</if>
+			<if test="categoryType == 'medium'">
+				M_CD_ID
+			</if>
+				parentCategoryId
+				,CD_ID categoryId
+				, CD_NM categoryName
+		FROM	
+			<if test="categoryType == 'large'">
+				MED_CTGR
+			</if>
+			<if test="categoryType == 'medium'">
+				SML_CTGR
+			</if>
+		WHERE	
+			<if test="categoryType == 'large'">
+				L_CD_ID = 
+			</if>
+			<if test="categoryType == 'medium'">
+				M_CD_ID = 
+			</if>
+						  #{ categoryId }
+	</select>
+	
+	<delete id="deleteCategory" parameterType="CategoryVO">
+		DELETE	FROM
+		<if test="categoryType == 'large'">
+			LRG_CTGR
+		</if>
+		<if test="categoryType == 'medium'">
+			MED_CTGR
+		</if>
+		<if test="categoryType == 'small'">
+			SML_CTGR
+		</if>
+		WHERE	CD_ID = #{ categoryId }
+	</delete>
+	
+	<update id="modifyCategory" parameterType="CategoryVO">
+		UPDATE
+			<if test="categoryType == 'large'">
+				LRG_CTGR
+			</if>
+			<if test="categoryType == 'medium'">
+				MED_CTGR
+			</if>
+			<if test="categoryType == 'small'">
+				SML_CTGR
+			</if>
+		SET		CD_NM = #{ categoryName }
+		WHERE	CD_ID = #{ categoryId }
+	</update>
+	
+</mapper>

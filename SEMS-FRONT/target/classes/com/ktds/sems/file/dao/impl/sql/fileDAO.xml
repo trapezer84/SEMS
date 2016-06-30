@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FileDAO">
+
+	<select id="getOneFileId" parameterType="string" resultType="FileVO">
+		SELECT FILE_ID fileId
+		, FILE_NM fileName
+		, FILE_LOC fileLocation
+		, ATC_ID articleId
+		FROM SEMS.FILES
+		WHERE ATC_ID = #{educationId}
+	</select>
+	<select id="getFileList" parameterType="FileVO" resultType="FileVO">
+		SELECT FILE_ID fileId
+		, FILE_NM fileName
+		, FILE_LOC fileLocation
+		, ATC_ID articleId
+		FROM FILES
+		WHERE ATC_ID = #{articleId}
+		AND FILE_NM = #{fileName}
+	</select>
+	<insert id="insertFile" parameterType="FileVO">
+		INSERT	INTO FILES	(
+								FILE_ID
+								, FILE_NM
+								, FILE_LOC
+								, ATC_ID
+							)
+		VALUES				(
+								FILE_ID_SEQ.NEXTVAL
+								, #{fileName}
+								, #{fileLocation}
+								, #{articleId}
+							)
+	</insert>
+	
+	<insert id="doWriteFile" parameterType="fileVO">
+		INSERT INTO SEMS.FILES (
+		FILE_ID
+		, FILE_NM
+		, FILE_LOC
+		, ATC_ID
+		)
+		VALUES ( FILE_ID_SEQ.NEXTVAL
+		, #{fileName }
+		, #{fileLocation}
+		, #{articleId }
+		)
+	</insert>
+
+	<update id="updateFile" parameterType="fileVO">
+		UPDATE FILES
+		SET ATC_ID = #{articleId}
+		<if test="fileName != null">
+			, FILE_NM = #{fileName}
+		</if>
+		<if test="fileLocation != null">
+			, FILE_LOC = #{fileLocation}
+		</if>
+		WHERE ATC_ID = #{articleId}
+	</update>
+	
+	<select id="getAllFilesByArticleId" resultType="FileVO" parameterType="string">
+		SELECT	FILE_ID fileId
+				, FILE_NM fileName
+				, FILE_LOC fileLocation
+				, ATC_ID articleId
+		FROM	FILES
+		WHERE	ATC_ID = #{articleId}
+		AND		IS_DELETE = 'N'
+	</select>
+	
+	<select id="getOneFileByFileId" resultType="FileVO" parameterType="string">
+		SELECT	FILE_ID fileId
+				, FILE_NM fileName
+				, FILE_LOC fileLocation
+				, ATC_ID articleId
+		FROM	FILES
+		WHERE	FILE_ID = #{fileId}
+	</select>
+
+	<update id="deleteFile" parameterType="string">
+		UPDATE	FILES
+		SET		IS_DELETE = 'Y'
+		WHERE	ATC_ID = #{articleId}
+	</update>
+
+</mapper>

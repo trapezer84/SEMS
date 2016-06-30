@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="teacherDAO" class="com.ktds.sems.teacher.dao.impl.TeacherDAOImpl">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<bean id="teacherBiz" class="com.ktds.sems.teacher.biz.impl.TeacherBizImpl">
+		<property name="teacherDAO" ref="teacherDAO" />
+	</bean>
+	
+	<bean id="teacherService" class="com.ktds.sems.teacher.service.impl.TeacherServiceImpl">
+		<property name="teacherBiz" ref="teacherBiz" />
+	</bean>
+
+</beans>

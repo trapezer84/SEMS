@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PcDAO">
+
+	<select id="getTotalUsedPcCount" parameterType="UsedPcSearchVO" resultType="_int">	
+		SELECT	COUNT(UP.USED_PC_ID)
+		FROM	USED_PC UP
+				, EDU_INFO EI
+				, PC P
+		WHERE	UP.PC_ID = P.PC_ID
+		AND		UP.EDU_ID = EI.EDU_ID
+		<if test="searchKeyword != null and searchKeyword != ''">
+		AND		(
+				<if test="searchType == 'pcName'">
+					P.PC_NAME LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'educationTitle'">
+					EI.EDU_TTL LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'memberId'">
+					UP.MBR_ID LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'ip'">
+					P.IP LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				)
+		</if>
+		ORDER	BY UP.USED_PC_ID DESC
+	</select>
+	
+	<select id="getUsedPcList" parameterType="UsedPcSearchVO" resultType="UsedPcVO">
+		SELECT	U.USED_PC_ID usedPcId
+				, U.EDU_ID eduId
+				, U.EDU_TTL educationTitle
+				, U.PC_ID pcId
+				, U.PC_NAME pcName
+				, U.MBR_ID memberId
+				, U.IP ip
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, USED_PC2.*
+					FROM	(
+								SELECT	UP.USED_PC_ID
+                                        , UP.EDU_ID
+                                        , EI.EDU_TTL
+                                        , UP.PC_ID
+                                        , P.PC_NAME
+                                        , UP.MBR_ID
+                                        , P.IP
+								FROM	 USED_PC UP
+                                         , EDU_INFO EI
+                                         , PC P
+                                WHERE    UP.PC_ID = P.PC_ID
+                                AND      UP.EDU_ID = EI.EDU_ID
+								<if test="searchKeyword != null and searchKeyword != ''">
+								AND		(
+										<if test="searchType == 'pcName'">
+											P.PC_NAME LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'educationTitle'">
+											EI.EDU_TTL LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'memberId'">
+											UP.MBR_ID LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'ip'">
+											P.IP LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										)
+								</if>
+								ORDER BY UP.USED_PC_ID DESC
+							) USED_PC2
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) U
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getTotalReportedPcCount" parameterType="ReportedPcSearchVO" resultType="_int">
+		SELECT	COUNT(RP.RPT_PC_ID)
+		FROM	RPT_PC RP
+				, PC P
+				, CODE_MNG CM
+				, EDU_PLACE EP
+		WHERE	RP.PC_ID = P.PC_ID
+		AND		RP.RPT_STAT = CM.CD_ID
+		AND		P.EDU_PLACE_ID = EP.EDU_PLACE_ID
+		<if test="searchKeyword != null and searchKeyword != ''">
+		AND		(
+				<if test="searchType == 'pcName'">
+					P.PC_NAME LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'reportedCategory'">
+					RP.RPT_CTGR LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'reportedState'">
+					CM.CD_NM LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'reportedComment'">
+					RP.RPT_CMNT LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'memberId'">
+					RP.MBR LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'educationPlaceName'">
+					EP.EDU_PLACE_NAME LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				<if test="searchType == 'educationLocation'">
+					EP.EDU_PLACE_LOC LIKE '%' || #{searchKeyword} || '%'
+				</if>
+				)
+		</if>
+		ORDER	BY RP.RPT_PC_ID DESC
+	</select>
+	
+	<select id="getReportedPcListWithPaging" parameterType="ReportedPcSearchVO" resultType="ReportedPcVO">
+		SELECT	RP3.RPT_PC_ID reportedPcId
+				, RP3.RPT_CTGR reportedCategory
+				, RP3.RPT_CMNT reportedComment
+				, RP3.RPT_STAT reportedState
+				, RP3.MBR_ID memberId
+				, RP3.PC_NAME pcName
+				, RP3.CD_NM cdNm
+				, RP3.EDU_PLACE_NAME educationPlaceName
+				, RP3.EDU_PLACE_LOC educationLocation
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, RP2.*
+					FROM	(
+								SELECT	RP.RPT_PC_ID
+										, RP.RPT_CTGR
+										, RP.RPT_CMNT
+										, RP.RPT_STAT
+										, RP.MBR_ID
+										, P.PC_NAME
+										, CM.CD_NM
+										, EP.EDU_PLACE_NAME
+										, EP.EDU_PLACE_LOC
+								FROM	RPT_PC RP
+                                        , PC P
+                                        , CODE_MNG CM
+                                        , EDU_PLACE EP
+                                WHERE   RP.PC_ID = P.PC_ID
+                                AND     RP.RPT_STAT = CM.CD_ID
+                                AND		P.EDU_PLACE_ID = EP.EDU_PLACE_ID
+                                <if test="searchKeyword != null and searchKeyword != ''">
+								AND		(
+										<if test="searchType == 'pcName'">
+											P.PC_NAME LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'reportedCategory'">
+											RP.RPT_CTGR LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'reportedState'">
+											CM.CD_NM LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'reportedComment'">
+											RP.RPT_CMNT LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'memberId'">
+											RP.MBR LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'educationPlaceName'">
+											EP.EDU_PLACE_NAME LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										<if test="searchType == 'educationLocation'">
+											EP.EDU_PLACE_LOC LIKE '%' || #{searchKeyword} || '%'
+										</if>
+										)
+								</if>
+								ORDER BY RP.RPT_PC_ID DESC
+							) RP2
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) RP3
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	<update id="changeReportedState" parameterType="ReportedPcVO">
+		UPDATE	RPT_PC
+		SET		RPT_STAT = #{reportedState}
+		WHERE	RPT_PC_ID = #{reportedPcId}
+	</update>
+	<select id="nextEducationPlaceSequence" resultType="_int">
+		SELECT	EDU_PLACE_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<select id="nextPcSequence" resultType="_int">
+		SELECT	PC_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<select id="getSysdate" resultType="string">
+		SELECT	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		FROM	DUAL
+	</select>
+	<insert id="doRegistEduPlace" parameterType="PcVO">
+		INSERT INTO EDU_PLACE 	(
+		   							EDU_PLACE_ID
+		   							, EDU_PLACE_NAME
+		   							, EDU_PLACE_LOC
+		   						) 
+		VALUES 					( 
+									#{educationPlaceId}
+									, #{educationPlaceName}
+									, #{educationLocation} 
+		 						)
+	</insert>
+	<insert id="doRegistPC" parameterType="PcVO">
+		INSERT INTO PC 	(
+						   	PC_ID
+						   	, PC_NAME
+						   	, EDU_PLACE_ID
+						   	, IP
+						) 
+		VALUES 			( 
+							#{pcId}
+							, #{pcName}
+							, #{educationPlaceId}
+							, #{ip}
+		 				)
+	</insert>
+	
+	<select id="getEducationPlaceList" parameterType="EducationPlaceSearchVO" resultType="PcVO">
+		SELECT	DISTINCT EP.EDU_PLACE_ID educationPlaceId
+				, EP.EDU_PLACE_NAME educationPlaceName
+				, EP.EDU_PLACE_LOC educationLocation
+				, (
+					SELECT	COUNT(PC_ID)
+					FROM	PC
+					WHERE	EDU_PLACE_ID = EP.EDU_PLACE_ID
+				  ) pcCount
+		FROM	(
+		            SELECT  ROWNUM AS RNUM
+		                    , EPL.*
+		            FROM    (
+		                        SELECT  * 
+		                        FROM	EDU_PLACE
+		                        ORDER   BY EDU_PLACE_ID DESC
+		                    ) EPL
+		            WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+		        ) EP
+		        , PC P
+		WHERE	RNUM >= #{startIndex}
+		AND		P.EDU_PLACE_ID = EP.EDU_PLACE_ID
+	</select>
+	<delete id="doActionDeleteEduPlace" parameterType="string">
+		DELETE	
+		FROM	EDU_PLACE
+		WHERE	EDU_PLACE_ID = #{educationPlaceId}
+	</delete>
+	<update id="doActionDeleteEduPlaceBeforePCFKUpdate" parameterType="string">
+		UPDATE	PC
+		SET		EDU_PLACE_ID = '강의실 없어짐'
+		WHERE	EDU_PLACE_ID = #{educationPlaceId}
+	</update>
+	<delete id="doActionDeleteEduPC" parameterType="string">
+		DELETE	
+		FROM	PC
+		WHERE	PC_ID = #{pcId}
+	</delete>
+	<select id="getTotalEduPlaceCount" parameterType="EducationPlaceSearchVO" resultType="_int">
+		SELECT	COUNT(EDU_PLACE_ID)
+		FROM	EDU_PLACE
+	</select>
+	<select id="callIdJunitTest" parameterType="PcVO" resultType="PcVO">
+		SELECT	P.PC_ID pcId
+				, EP.EDU_PLACE_ID educationPlaceId
+		FROM	EDU_PLACE EP
+				, PC P
+		WHERE	EP.EDU_PLACE_ID = P.EDU_PLACE_ID
+		AND		P.PC_NAME = #{pcName}
+		AND		P.IP = #{ip}
+		AND     EP.EDU_PLACE_NAME = #{educationPlaceName}
+        AND		EP.EDU_PLACE_LOC = #{educationLocation}		
+	</select>
+	
+</mapper>

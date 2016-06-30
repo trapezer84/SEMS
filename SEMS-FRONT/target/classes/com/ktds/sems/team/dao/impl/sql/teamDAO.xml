@@ -1,0 +1,826 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="teamDAO">
+	
+
+<select id="getMyTotalTeamCount" resultType = "_int">
+			SELECT COUNT(*)
+			FROM SEMS.TEAM
+	</select>
+
+
+	<select id="getAllMyTeamList"  parameterType="map" resultType="TeamVO">
+		SELECT	T.TEAM_ID teamId
+					, T.TEAM_NM teamName
+					, T.TEAM_DT teamDate
+					, T.EDU_ID educationId
+					, EI.EDU_TTL educationName
+					, L.CNT teamCount
+        FROM	(
+                    SELECT	ROWNUM AS RNUM
+                            , T.*
+                    FROM	(
+                                SELECT	TEAM.*			
+                                FROM	TEAM
+                                ORDER	BY TEAM_ID DESC
+                            ) T
+                    WHERE	ROWNUM <![CDATA[<=]]> #{searchVO.endIndex}
+                ) T
+                , 
+                (
+                    SELECT  COUNT(*) CNT, TEAM_ID 
+                    FROM    TEAM_LIST
+                    GROUP   BY TEAM_ID
+                ) L
+                , EDU_INFO EI
+                , (
+              	    SELECT  MBR_ID, TEAM_ID
+                    FROM    TEAM_LIST
+                    WHERE   MBR_ID = #{memberId}
+                   ) M
+        WHERE	RNUM <![CDATA[>=]]> #{searchVO.startIndex}
+        AND     L.TEAM_ID (+)= T.TEAM_ID
+        AND		EI.EDU_ID = T.EDU_ID
+        AND     M.TEAM_ID = T.TEAM_ID
+
+
+	</select>
+
+		<select id="teamCount" parameterType="_int" resultType="_int">
+	
+	SELECT COUNT(TEAM_LST_ID)
+	FROM	TEAM_LIST
+	WHERE	TEAM_ID=#{teamId}
+	
+	</select>
+
+		<select id="getOneMyTeamDetail" parameterType="String" resultType="TeamVO">
+		SELECT 		TEAM.TEAM_NM	teamName
+					, COUNT(MBR_ID)	 teamCount
+		FROM   	    TEAM_LIST,	TEAM
+		WHERE 	    TEAM_LIST.TEAM_ID = #{teamId}
+		AND			TEAM_LIST.TEAM_ID = TEAM.TEAM_ID
+		GROUP BY 	TEAM.TEAM_NM
+		
+	</select>
+
+	<select id="nextMinutesSeq" resultType="_int">
+		SELECT	MINU_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<insert id="addNewTeamBBS" parameterType="TeamBBSVO">
+		INSERT INTO TEAM_BBS (
+									   TEAM_BBS_ID, 
+									   TEAM_ID,
+									   TITLE, 
+									   DESCRIPT,
+									   MBR_ID, 
+									   CREATED_DATE,
+									   <if test="isNotice != null">
+								 	   IS_NOTICE
+									   </if>
+									
+					   			  ) 
+		VALUES 					( 
+									   #{teamBBSId},
+									   #{teamId},
+									 	#{title},
+										#{descript},
+										#{memberId},
+									 	SYSDATE,
+									 	<if test="isNotice != null">
+									 	#{isNotice}
+									 	</if>
+								)
+	</insert>
+	
+	<select id="getNextTeamBBSSeq"  resultType = "_int">
+		SELECT	TEAM_BBS_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="getSysDate" resultType = "String">
+		SELECT	TO_CHAR(SYSDATE , 'YYYYMMHH')
+		FROM	DUAL
+	</select>
+	
+	<select id="getAllTeamList" parameterType="TeamSearchVO" resultType="TeamVO">
+		SELECT	T3.TEAM_ID teamId
+				, T3.TEAM_NM teamNumber
+				, T3.TEAM_DT teamDate
+				, T3.EDU_ID educationId
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, T2.*
+					FROM	(
+								SELECT	T.TEAM_ID
+										, T.TEAM_NM
+										, T.TEAM_DT
+										, T.EDU_ID
+								FROM	TEAM T
+								WHERE	1 = 1
+								<if test="searchKeyword != null and searchKeyword != ''">
+								AND		(
+											<if test="searchType == 'teamId'">
+												T.TEAM_ID LIKE '%' || #{searchKeyword} || '%'
+											</if>
+											<if test="searchType == 'teamNumber'">
+												T.TEAM_NM LIKE '%' || #{searchKeyword} || '%'
+											</if>
+											<if test="searchType == 'educationId'">
+												T.EDU_ID LIKE '%' || #{searchKeyword} || '%'
+											</if>
+											<if test="startDate != null and startDate != ''">
+												T.TEAM_DT <![CDATA[>=]]> #{startDate}
+											</if>
+											<if test="endDate != null and endDate != ''">
+												T.TEAM_DT <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+											</if>
+										)
+								</if>
+								ORDER	BY T.TEAM_ID DESC
+							) T2
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) T3
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<select id="getTotalteamCount" resultType="_int">
+	 	SELECT	COUNT(*)
+		FROM	TEAM_BBS
+	 </select>
+	 
+		<select id="getTotalMyTeamCount" parameterType="string" resultType="_int">
+	 	SELECT	COUNT(*)
+		FROM	TEAM
+		WHERE	TEAM_ID IN (
+							SELECT 	TEAM_ID
+							FROM	TEAM_LIST
+							WHERE	MBR_ID = #{memberId}
+						  )
+	 </select>
+	
+	<select id="getTeamBBSList" parameterType ="TeamSearchVO" resultType="TeamBBSVO">
+		SELECT	TEAM_BBS.TEAM_BBS_ID teamBBSId,
+	    		TEAM_BBS.TEAM_ID teamId, 
+	    		TEAM_BBS.TITLE title, 
+	    		BBS_HTR.HITS hits,
+			    TEAM_BBS.DESCRIPT descript, 
+			    TEAM_BBS.LIKE_CNT likeCount,
+			    TEAM_BBS.DISLIKE_CNT disLikeCount,
+			    TEAM_BBS.MBR_ID memberId, 
+			    TEAM_BBS.CREATED_DATE createdDate,
+		   		TEAM_BBS.MODIFIED_DATE modifiedDate,
+		   		TEAM_BBS.IS_NOTICE isNotice,
+		   		NVL(FILES.FCOUNT,0) fileCount		
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, TEAM_BBS.*
+					FROM	(
+								SELECT	*
+								FROM	TEAM_BBS
+								WHERE	TEAM_ID = #{teamId}
+								ORDER	BY TEAM_BBS_ID DESC
+							) TEAM_BBS
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) TEAM_BBS
+				,(
+					SELECT  BBS_ID, COUNT(*) HITS
+					FROM    BBS_HTR
+					GROUP   BY BBS_ID
+				) BBS_HTR
+				,
+				(
+			    	SELECT ATC_ID, COUNT(*) FCOUNT
+			    	FROM FILES
+			     	GROUP BY ATC_ID
+			    ) FILES
+		WHERE	RNUM >= #{startIndex}
+		AND		BBS_HTR.BBS_ID (+)= TEAM_BBS.TEAM_BBS_ID
+		AND     FILES.ATC_ID (+)= TEAM_BBS.TEAM_BBS_ID 
+	</select>
+	
+	<select  id="getSearchedBBSCount" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	TEAM_BBS
+	</select>	
+	
+	<select id="getStartYear" resultType="string">
+		SELECT	SUBSTR(TO_CHAR(CREATED_DATE, 'YYYY'), 1, 4) CDATE
+		FROM	(
+                    SELECT CREATED_DATE
+                    FROM    TEAM_BBS
+                    ORDER BY CREATED_DATE ASC
+                )
+        WHERE   ROWNUM = 1
+	</select>
+	
+	<select id="getEndYear" resultType="string">
+		SELECT	SUBSTR(TO_CHAR(SYSDATE, 'YYYY'), 1, 4) SDATE
+		FROM	DUAL
+	</select>
+	
+	<select id="doSearchList" parameterType="map" resultType="TeamBBSVO">
+		SELECT	TEAM_BBS_ID teamBBSId
+				, TEAM_ID teamId
+				, TITLE title
+				, DESCRIPT descript
+				, HITS hits
+				, LIKE_CNT likeCount
+				, DISLIKE_CNT disLikeCount
+				, MBR_ID memberId
+				, CREATED_DATE createdDate
+				, MODIFIED_DATE modifiedDate
+				, IS_NOTICE isNotice
+				, FILES.FCOUNT fileCount
+         FROM   (
+               SELECT   ROWNUM   AS RNUM
+                     , TEAM_BBS.*
+               FROM   (
+                        SELECT   *
+                        FROM   SEMS.TEAM_BBS
+                        WHERE  1=1	 
+			         
+			           <if test="teamBBSVO.title != null">
+			           		AND LOWER(TITLE) LIKE '%'||#{teamBBSVO.title}||'%'
+			           </if>
+			           <if test="teamBBSVO.descript != null"> 
+			           		AND LOWER(DESCRIPT) LIKE '%'||#{teamBBSVO.descript}||'%'
+			           </if>
+			           <if test="teamBBSVO.memberId != null">
+			           		AND MBR_ID LIKE #{teamBBSVO.memberId}
+			           </if>
+			           <if test="teamBBSVO.createdDate != null">
+					        AND SUBSTR(TO_CHAR(CREATED_DATE, 'YYYY/MM'), 1,7) LIKE #{teamBBSVO.createdDate}
+			           </if>
+			           <if test="teamBBSVO.modifiedDate != null">
+			           		AND SUBSTR(TO_CHAR(MODIFIED_DATE, 'YYYY/MM'), 1,7) LIKE #{teamBBSVO.modifiedDate}
+			           </if>
+			           <if test="teamBBSVO.hits != null">
+			           		AND HITS >= #{teamBBSVO.hits}
+			           </if>
+			           <if test="teamBBSVO.likeCount != null">
+			           		AND LIKE_CNT >= #{teamBBSVO.likeCount}
+			           </if>
+			           <if test="teamBBSVO.disLikeCount != null">
+			           		AND DISLIKE_CNT >= #{teamBBSVO.disLikeCount}
+			           </if>
+                        ORDER   BY TEAM_BBS_ID DESC
+                     ) TEAM_BBS
+               WHERE   ROWNUM <![CDATA[<=]]> #{searchVO.endIndex}
+            ) BBS
+            ,
+            (
+			    SELECT ATC_ID, COUNT(*) FCOUNT
+			    FROM FILES
+			    GROUP BY ATC_ID
+			) FILES
+      WHERE   RNUM >= #{searchVO.startIndex}
+      AND     FILES.ATC_ID (+)= BBS.TEAM_BBS_ID 
+    </select>
+	
+	<select id="getOneTeamDetail" parameterType="string" resultType="TeamsListVO">
+	SELECT	TEAM_LST_ID teamListId
+			, TEAM_ID teamId
+			, MBR_ID mbrId
+	FROM	TEAM_LIST
+	WHERE	TEAM_ID = #{teamListId}
+	</select>
+	
+	<select id="getTeamBBS" parameterType="String" resultType="TeamBBSVO">
+		SELECT		TEAM_BBS_ID teamBBSId,
+		    		TEAM_ID teamId, 
+		    		TITLE title, 
+					DESCRIPT descript, 
+					COUNT_HITS.HITS hits, 
+					LIKE_CNT likeCount,
+					DISLIKE_CNT disLikeCount, 
+					MBR_ID memberId, 
+					CREATED_DATE createdDate, 
+			   		MODIFIED_DATE modifiedDate,
+			   		IS_NOTICE isNotice
+		FROM		TEAM_BBS
+					,
+					(
+						SELECT	COUNT(*) HITS
+						FROM	BBS_HTR
+						WHERE 	BBS_ID = #{teamBBSId}
+					) COUNT_HITS
+		WHERE		TEAM_BBS_ID = #{teamBBSId}
+	</select>
+	
+	<select id="isAlreadyCheckBBS" parameterType="TeamBBSVO" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	BBS_HTR
+		WHERE	BBS_ID = #{teamBBSId}
+		AND		MBR_ID = #{memberId}
+	</select>
+		
+	<insert id="addHitsRecord" parameterType="TeamBBSVO">
+		INSERT INTO BBS_HTR (
+		  						 BBS_HTR_ID
+		  						 , MBR_ID
+		  						 , BBS_ID
+		  					) 
+		VALUES				( 
+								 #{bbsHistoryId},	
+								 #{memberId},
+								 #{teamBBSId}
+						    )
+	</insert>
+	
+	<delete id="removeHitsRecord" parameterType="String">
+		DELETE 
+		FROM	BBS_HTR
+		WHERE	BBS_HTR_ID = #{bbsHistoryId}
+	</delete>
+	
+	<select id="getNextBBSHistorySeq" resultType="_int">
+		SELECT	BBS_HTR_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="checkDislikeByTeamBBSVO" parameterType="TeamBBSVO" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	BBS_HTR
+		WHERE	MBR_ID 	= #{memberId}
+		AND		BBS_ID	= #{teamBBSId}
+		AND		DISLIKE_YN	= 'Y'
+	</select>
+	
+	<update id="addLikeRecord" parameterType="TeamBBSVO">
+		UPDATE	BBS_HTR
+		SET		LIKE_YN = 'Y'
+		WHERE	MBR_ID = #{memberId}
+		AND		BBS_ID	= #{teamBBSId}
+	</update>
+	
+	<select id="checkLikeByTeamBBSVO" parameterType="TeamBBSVO" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	BBS_HTR
+		WHERE	MBR_ID  = #{memberId}
+		AND		BBS_ID	= #{teamBBSId}
+		AND		LIKE_YN	= 'Y'
+	</select>
+	
+	<update id="addDislikeRecord" parameterType="TeamBBSVO">
+		UPDATE	BBS_HTR
+		SET		DISLIKE_YN = 'Y'
+		WHERE	MBR_ID = #{memberId}
+		AND		BBS_ID	= #{teamBBSId}
+	</update>
+	
+	<select id="getLikeState" parameterType="TeamBBSVO" resultType="String">
+		SELECT	LIKE_YN
+		FROM	BBS_HTR
+		WHERE	MBR_ID = #{memberId}
+		AND		BBS_ID	= #{teamBBSId}
+	</select>
+
+	<select id="getDislikeState" parameterType="TeamBBSVO" resultType="String">
+		SELECT	DISLIKE_YN
+		FROM	BBS_HTR
+		WHERE	MBR_ID = #{memberId}
+		AND		BBS_ID	= #{teamBBSId}
+	</select>
+	
+	<update id="addLikeCount" parameterType="TeamBBSVO">
+		UPDATE	TEAM_BBS
+		SET		LIKE_CNT = LIKE_CNT + 1
+		WHERE	MBR_ID = #{memberId}
+		AND		TEAM_BBS_ID	= #{teamBBSId}
+	</update>
+	
+	<select id="getFileInfo" parameterType="string" resultType="string">
+        SELECT  NVL(FILE_NM,'') fileName
+		FROM    FILES, TEAM_BBS
+		WHERE   ATC_ID = #{teamBBSId}
+		AND		TEAM_BBS_ID = #{teamBBSId}
+	</select>
+	
+	<update id="doModifyAction" parameterType="TeamBBSVO">
+		UPDATE SEMS.TEAM_BBS
+		SET    DESCRIPT      = #{descript},
+		       IS_NOTICE     = #{isNotice},
+		       MODIFIED_DATE = SYSDATE,
+		       TITLE         = #{title}
+		WHERE  TEAM_BBS_ID   = #{teamBBSId}
+	</update>
+		
+	<select id="getAllEduMember" parameterType="string"  resultType="MemberVO">
+		SELECT  MBR_ID id
+		FROM    (
+		            SELECT  MBR_ID
+		            FROM    EDU_CLASS
+		            WHERE   EDU_ID = #{educationId}
+		            AND     STAT = 'EDU_JN_C'
+		        )
+		WHERE   MBR_ID NOT IN   (
+		                            SELECT  MBR_ID
+		                            FROM    TEAM_LIST
+		                        )
+	</select>
+	
+	<insert id="bulidTeam" parameterType="map">
+		INSERT INTO TEAM	(
+							   TEAM_ID
+							   , TEAM_NM
+							   , TEAM_DT
+							   , EDU_ID
+							) 
+		VALUES	(
+					TEAM_SEQ.NEXTVAL
+					, #{teamName}
+					, SYSDATE
+					, #{educationId} 
+				)
+	</insert>
+	
+	<insert id="insertMember" parameterType="TeamsListVO">
+		INSERT INTO SEMS.TEAM_LIST (
+		                                TEAM_LST_ID
+		                                , TEAM_ID
+		                                , MBR_ID
+		                            ) 
+		VALUES  (
+		            <choose>
+		            	<when test="teamListId != null and teamListId != ''">
+							#{teamListId}
+		            	</when>
+		            	<otherwise>
+				            TEAM_LST_SEQ.NEXTVAL
+		            	</otherwise>
+		            </choose>
+		            , TEAM_SEQ.CURRVAL
+		            , #{mbrId}
+		        )
+	</insert>
+	
+	<select id="getTotalMinutesCountForAdmin" parameterType="MinutesSearchVO" resultType="_int">
+		SELECT COUNT(MINU_ID)
+		FROM   MINU_INFO
+		<if test="startDate != null and startDate != ''">
+		WHERE	SUBSTR(START_DATE, 1, 10) = TO_DATE(#{startDate}, 'YYYY-MM-DD')		
+		</if>
+	</select>
+	
+	<select id="getAllMinutes" parameterType="MinutesSearchVO" resultType="MinutesVO">
+		SELECT	MIN.MINU_ID minutesId
+				, MIN.MBR_ID memberId
+				, MIN.MINU_AGE minutesAgenda
+				, MIN.ATTENDACNCE attendance
+				, MIN.MINU_PLA minutesPlace
+				, MIN.MINU_CON minutesContent
+				, MIN.DSC_SBT decisionSubject
+				, MIN.REMARKS remarks
+				, MIN.TEAM_ID teamId
+				, MIN.START_DATE startDate
+				, MIN.END_DATE endDate
+		FROM	(
+				SELECT	ROWNUM AS RNUM
+			   			, MINU.*
+				FROM   (
+								SELECT	MINU_INFO.*
+								FROM   (
+											SELECT	MINU_INFO.*
+											FROM   	MINU_INFO
+						               ) MINU_INFO
+								<if test="startDate != null and startDate != ''">
+				                WHERE	SUBSTR(START_DATE, 1, 10) = TO_DATE(#{startDate}, 'YYYY-MM-DD')		
+								</if>
+				                ORDER   BY   MINU_ID DESC
+				        ) MINU
+				WHERE   ROWNUM <![CDATA[<=]]> #{endIndex}
+				) MIN
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getSaltById" parameterType="string" resultType="string">
+		SELECT	SALT salt
+		FROM	MBR
+		WHERE	ID = #{ sessionId }
+	</select>
+	
+	<select id="getPasswordById" parameterType="string" resultType="string">
+		SELECT	PWD password
+		FROM	MBR
+		WHERE	ID = #{ sessinoId }
+	</select>
+	
+	<delete id="doDeleteBBS" parameterType="string">
+		DELETE
+		FROM	TEAM_BBS
+		WHERE	TEAM_BBS_ID = #{teamBBSId}
+	</delete>
+	
+	<select id="isReplyByTeamBBSId" parameterType="string" resultType="string">
+		SELECT  REPLY_ID
+		FROM	TEAM_BBS_RPL
+		WHERE	TEAM_BBS_ID = #{teamBBSId}
+	</select>
+	
+	<update id="addDislikeCount" parameterType="TeamBBSVO">
+		UPDATE	TEAM_BBS
+		SET		DISLIKE_CNT = DISLIKE_CNT + 1
+		WHERE	MBR_ID = #{memberId}
+		AND		TEAM_BBS_ID	= #{teamBBSId}
+	</update>
+	
+	<insert id="writeBBSReply" parameterType="TeamBBSReplyVO">
+		INSERT INTO TEAM_BBS_RPL (
+									   REPLY_ID, 
+									   TEAM_BBS_ID, 
+									   MBR_ID, 
+									   DESCRIPT,
+									   PARENT_REPLY_ID,
+									   DEPTH,
+									   ORDER_NO
+								  ) 
+					VALUES 		( 
+										#{replyId},
+		   							    #{teamBBSId},
+										#{memberId},
+										#{descript},								
+										'0',
+										#{depth},
+										#{orderNo}
+								 )
+	</insert>
+	
+	<select id="getTeamBBSReplies" parameterType="TeamBBSReplyVO" resultType="TeamBBSReplyVO">
+		SELECT	REPLY_ID replyId, 
+				TEAM_BBS_ID teamBBSId, 
+				MBR_ID memberId, 
+				DESCRIPT descript
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, TEAM_BBS_RPL.*
+					FROM	(
+								SELECT	*
+								FROM	TEAM_BBS_RPL
+								WHERE  	PARENT_REPLY_ID = '0'
+								AND		TEAM_BBS_ID =  #{teamBBSId}
+								ORDER	BY REPLY_ID DESC
+							) TEAM_BBS_RPL
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) TEAM_BBS_RPL
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getNextTeamBBSReplySeq" resultType="_int">
+		SELECT	TEAM_BBS_REPLY_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<insert id="writeBBSReReply" parameterType="TeamBBSReplyVO">
+		INSERT INTO TEAM_BBS_RPL (
+									   REPLY_ID, 
+									   TEAM_BBS_ID, 
+									   MBR_ID, 
+									   DESCRIPT,
+									   PARENT_REPLY_ID,
+									   DEPTH,
+									   ORDER_NO
+								  ) 
+					VALUES 		( 
+										#{replyId},
+		   							    #{teamBBSId},
+										#{memberId},
+										#{descript},
+										#{parentReplyId},
+										#{depth},
+										#{orderNo}
+								)
+	</insert>
+	
+	<select id="getNextOrderNoByParentId" parameterType="String" resultType="_int">
+		SELECT	MAX(ORDER_NO) + 1
+		FROM	TEAM_BBS_RPL
+		WHERE	PARENT_REPLY_ID	= #{parentReplyId}
+	</select>
+	
+	<select id="isExistedOrderNoByParentId" parameterType="String" resultType="_int">
+		SELECT	COUNT(ORDER_NO)
+		FROM	TEAM_BBS_RPL
+		WHERE	PARENT_REPLY_ID	= #{parentReplyId}
+	</select>
+	
+	<insert id="insertNewMinutes" parameterType="MinutesVO">
+		INSERT INTO MINU_INFO (
+										   MINU_ID
+										   , MBR_ID
+										   , MINU_AGE
+										   , ATTENDACNCE
+										   , MINU_PLA
+										   , MINU_CON
+										   , DSC_SBT
+										   , REMARKS
+										   , TEAM_ID
+										   , START_DATE
+										   , END_DATE
+									) 
+		VALUES 						(  
+											#{minutesId}
+											, #{memberId}
+											, #{minutesAgenda}
+											, #{attendance}
+											, #{minutesPlace}
+											, #{minutesContent}
+											, #{decisionSubject}
+											, #{remarks}
+											, #{teamId}
+											, TO_DATE(#{startDate}, 'YYYY-MM-DD HH24:MI')
+											, TO_DATE(#{endDate}, 'YYYY-MM-DD HH24:MI')
+									)	
+	</insert>
+	
+	<select id="getAllMinutesList" parameterType="MinutesSearchVO" resultType="MinutesVO">
+		SELECT	MIN.MINU_ID minutesId
+				, MIN.MBR_ID memberId
+				, TO_CHAR(MIN.START_DATE, 'YYYY/MM/DD') startDate
+				, MIN.MINU_AGE minutesAgenda
+		FROM 	(
+					SELECT	ROWNUM AS RNUM
+							, MINU.*
+					FROM	(
+								SELECT	MINU_INFO.*
+								FROM	(
+											SELECT	MINU_INFO.*
+											FROM	MINU_INFO
+											WHERE	MINU_INFO.TEAM_ID = #{teamId}
+										)MINU_INFO
+								WHERE	1=1
+							<if test="search != null and search != ''">
+							<if test="search == 'id'">
+								AND		MINU_INFO.MBR_ID LIKE '%'||#{searchIDKeyword}||'%'
+							</if>
+							</if>
+							<if test="search != null and search != ''">
+							<if test="search == 'subject'">
+								AND		MINU_INFO.MINU_AGE LIKE '%'||#{searchSBTKeyword}||'%'
+							</if>
+							</if>
+							<if test="search != null and search != ''">
+							<if test="search == 'date'">
+								AND		START_DATE <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')
+								AND		START_DATE <![CDATA[<=]]> ( TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1 )
+							</if>
+							</if>
+								ORDER BY	MINU_INFO.MINU_ID DESC
+							) MINU
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) MIN
+		WHERE   RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getTotalMinutesCount" parameterType="MinutesSearchVO" resultType="_int">
+		SELECT	COUNT(MINU_ID)
+		FROM	(
+					SELECT	MINU_INFO.*
+					FROM	MINU_INFO
+					WHERE	MINU_INFO.TEAM_ID = #{teamId}
+				)MINU_INFO
+		WHERE	1=1
+	<if test="search != null and search != ''">
+	<if test="search == 'id'">
+		AND		MINU_INFO.MBR_ID LIKE '%'||#{searchIDKeyword}||'%'
+	</if>
+	</if>
+	<if test="search != null and search != ''">
+	<if test="search == 'subject'">
+		AND		MINU_INFO.MINU_AGE LIKE '%'||#{searchSBTKeyword}||'%'
+	</if>
+	</if>
+	<if test="search != null and search != ''">
+	<if test="search == 'date'">
+		AND		START_DATE <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')
+		AND		START_DATE <![CDATA[<=]]> ( TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1 )
+	</if>
+	</if>
+		ORDER BY	MINU_ID DESC
+	</select>
+		
+	<select id="getTeamBBSReReplies" parameterType="TeamSearchVO" resultType="TeamBBSReplyVO">
+		SELECT	REPLY_ID replyId, 
+				TEAM_BBS_ID teamBBSId, 
+				MBR_ID memberId, 
+				DESCRIPT descript
+		FROM	TEAM_BBS_RPL
+		WHERE  	PARENT_REPLY_ID = #{parentReplyId}
+	</select>
+	
+	<select id="getReplyCountByTeamBBSId" parameterType="String" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	TEAM_BBS_RPL
+		WHERE	TEAM_BBS_ID = #{teamBBSId}
+		AND		PARENT_REPLY_ID = '0'
+	</select>
+	
+	<delete id="doDeleteTeamListByMemberId">
+		DELETE
+		FROM	TEAM_LIST
+		WHERE	MBR_ID = #{memberId}
+	</delete>
+	
+	<delete id="doDeleteTeamByTeamName" parameterType="string" >
+		DELETE
+		FROM	TEAM
+		WHERE	TEAM_NM = #{teamName}
+	</delete>
+	
+	
+	
+	<select id="getOneDetailMinutes" parameterType="String" resultType="MinutesVO">
+		SELECT 
+				MINU_ID minutesId
+				, MBR_ID memberId
+				, MINU_AGE minutesAgenda
+				, ATTENDACNCE attendance
+				, MINU_PLA minutesPlace
+				, MINU_CON minutesContent
+				, DSC_SBT decisionSubject
+				, REMARKS remarks
+				, TEAM_ID teamId
+				, TO_CHAR(START_DATE ,'HH24:MM:SS') startDate
+				, TO_CHAR(END_DATE ,'HH24:MM:SS') endDate
+		FROM 	MINU_INFO
+		WHERE	MINU_ID = #{ minutesId }
+	</select>
+	
+	<select id="getOneDetailMinutesDate" parameterType="string" resultType="string">
+		SELECT  TO_CHAR(START_DATE, 'YYYY/MM/DD') minutesDate
+		FROM	MINU_INFO
+		WHERE	MINU_ID = #{ minutesId }
+	</select>
+
+	<delete id="deleteTestMinutes" parameterType="String">
+		DELETE	
+		FROM	MINU_INFO
+		WHERE	MINU_ID = #{ minutesId }
+	</delete>	
+	<select id="deleteNewReply" >
+		DELETE 
+		FROM	TEAM_BBS_RPL	RPL
+		WHERE	RPL.REPLY_ID = (
+		                            SELECT	MAX(R.REPLY_ID)
+		                            FROM	TEAM_BBS_RPL R
+		                        )
+	</select>
+	
+	<update id="initLikeRecord" parameterType="TeamBBSVO">
+		UPDATE	BBS_HTR
+		SET		LIKE_YN = 'N' 
+				, DISLIKE_YN = 'N'
+		WHERE	BBS_ID = #{teamBBSId}
+		AND		MBR_ID	= #{memberId}
+	</update>
+	
+	<insert id="insertNewEducation" parameterType="educationVO">
+
+		INSERT INTO SEMS.EDU_INFO (
+									   EDU_ID 
+									   , EDU_CTGR  
+									   , EDU_TTL  
+									   , MBR_ID 
+									   , MAX_MBR 
+									   , EDU_LOC 
+									   , EDU_CLCM 
+									   , EDU_INTR 
+									   , SRT_DATE 
+									   , END_DATE 
+									   , START_TM 
+									   , END_TM 
+									   , EDU_TP 
+									   , COST 
+									) 
+		VALUES 					 (	#{educationId}
+									 , #{educationCategory}
+									 , #{educationTitle}
+									 , #{memberId}
+									 , #{maxMember}
+									 , #{educationLocation}
+									 , #{educationCurriculum}
+									 , #{educationIntroduce}
+									 , #{startDate}
+									 , #{endDate }
+									 , #{startTime}
+									 , #{endTime}
+									 , #{educationType}
+									 , #{cost}
+								)
+	</insert>
+	
+	<delete id="deleteEducation" parameterType="string">
+		DELETE 
+		FROM	SEMS.EDU_INFO
+		WHERE	EDU_ID = #{educationId}
+	</delete>
+	
+	<select  id="getSearchedBBSCountByTeamId" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	TEAM_BBS
+	</select>	
+</mapper>

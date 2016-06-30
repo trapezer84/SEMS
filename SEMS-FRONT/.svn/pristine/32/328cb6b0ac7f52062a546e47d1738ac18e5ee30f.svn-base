@@ -1,0 +1,33 @@
+@CHARSET "UTF-8";
+
+div#bottom {
+	width: 100%;
+	height: 50px;
+	background-color: #0080ff;
+    position: relative;
+    border: 1px solid black;
+}
+div#eventbox {
+	width: 100%;
+	height: 150px;
+	background-color: #c0c0c0;
+	border: 1px solid black;
+}
+
+.closeon {
+  float: right;
+  padding: 0px 2px 4px 4px;
+}
+
+.my-highlight {
+  color: black !important;
+  background-color: lightblue !important;
+}
+
+#bottomDate {
+   background-color: #71d1b2;
+   color: #354052;
+   font-size: 12pt;
+   font-weight: bold;
+   
+}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<mvc:annotation-driven/>
+	
+	<mvc:resources   location="/WEB-INF/resources/" mapping="/resources/**" />
+	
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+				<mvc:exclude-mapping path="/resources/**"/>
+				<mvc:exclude-mapping path="/comm"/>
+			<bean id="commInterceptor" 
+					class="com.ktds.sems.interceptor.CommInterceptor"/>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	
+	<bean id="viewResolver"
+			class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/view/" />
+		<property name="suffix" value=".jsp" />		
+	</bean>
+	
+	<bean id="memberController" class="com.ktds.sems.member.web.MemberController">
+		<property name="memberService" ref="memberService"></property>
+	</bean>
+	
+	<bean id="educationController" class="com.ktds.sems.education.web.EducationController">
+		<property name="educationService" ref="educationService" />
+	</bean>
+	
+	<bean id="menuController" class="com.ktds.sems.menu.web.MenuController">
+		<property name="menuService" ref="menuService" />
+	</bean>
+	
+</beans>

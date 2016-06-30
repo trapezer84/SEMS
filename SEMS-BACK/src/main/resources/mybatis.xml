@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD config 3.0//EN"
+					"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+	<typeAliases>
+		<typeAlias type="com.ktds.sems.education.vo.EducationVO" alias="EducationVO"/>
+		<typeAlias type="com.ktds.sems.file.vo.FileVO" alias="FileVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.LoginHistoryVO" alias="LoginHistoryVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.LoginHistorySearchVO" alias="LoginHistorySearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.CostVO" alias="CostVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationTypeVO" alias="EducationTypeVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.CategoryVO" alias="CategoryVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationHistoryVO" alias="EduHistoryVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationHistorySearchVO" alias="EduHistorySearchVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.MemberVO" alias="MemberVO"/>
+		<typeAlias type="com.ktds.sems.teacher.vo.TeacherVO" alias="TeacherVO"/>
+		<typeAlias type="com.ktds.sems.teacher.vo.TeacherBookVO" alias="TeacherBookVO"/>
+		<typeAlias type="com.ktds.sems.teacher.vo.ProjectHistoryVO" alias="ProjectHistoryVO"/>
+		<typeAlias type="com.ktds.sems.teacher.vo.EducationHistoryVO" alias="TeacherEduHistoryVO"/>
+		<typeAlias type="com.ktds.sems.cooperation.vo.CooperationVO" alias="CooperationVO"/>
+		<typeAlias type="com.ktds.sems.cooperation.vo.CooperationSearchVO" alias="CooperationSearchVO"/>
+		<typeAlias type="com.ktds.sems.cooperation.vo.CooperationTypeVO" alias="CooperationTypeVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.MemberSearchVO" alias="MemberSearchVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.PersonalInfoReadVO" alias="PersonalInfoReadVO"/>
+		<typeAlias type="com.ktds.sems.teacher.vo.TeacherListVO" alias="TeacherListVO"/>
+		<typeAlias type="com.ktds.sems.teacher.vo.TeacherSearchVO" alias="TeacherSearchVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.MemberTypeVO" alias="MemberTypeVO" />
+		<typeAlias type="com.ktds.sems.member.vo.GraduationTypeVO" alias="GraduationTypeVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.HighestEducationLevelVO" alias="HighestEducationLevelVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduFileListVO" alias="EduFileListVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduFileSearchVO" alias="EduFileSearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduFileVO" alias="EduFileVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduQnaListVO" alias="EduQnaListVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduQnaSearchVO" alias="EduQnaSearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduQnaVO" alias="EduQnaVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduReportListVO" alias="EduReportListVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduReportSearchVO" alias="EduReportSearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduReportVO" alias="EduReportVO"/>
+		<typeAlias type="com.ktds.sems.pc.vo.PcVO" alias="PcVO"/>
+		<typeAlias type="com.ktds.sems.pc.vo.UsedPcVO" alias="UsedPcVO"/>
+		<typeAlias type="com.ktds.sems.pc.vo.ReportedPcVO" alias="ReportedPcVO"/>
+		<typeAlias type="com.ktds.sems.pc.vo.PcSearchVO" alias="PcSearchVO"/>
+		<typeAlias type="com.ktds.sems.pc.vo.UsedPcSearchVO" alias="UsedPcSearchVO"/>
+		<typeAlias type="com.ktds.sems.pc.vo.ReportedPcSearchVO" alias="ReportedPcSearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.TeamVO" alias="TeamVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationPlaceVO" alias="EducationPlaceVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduNoticeListVO" alias="EduNoticeListVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduNoticeVO" alias="EduNoticeVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EduNoticeSearchVO" alias="EduNoticeSearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationPlaceSearchVO" alias="EducationPlaceSearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationPlaceListVO" alias="EducationPlaceListVO"/>
+		<typeAlias type="com.ktds.sems.team.vo.TeamBBSVO" alias="TeamBBSVO"/>
+		<typeAlias type="com.ktds.sems.team.vo.TeamListVO" alias="TeamListVO"/>
+		<typeAlias type="com.ktds.sems.team.vo.TeamSearchListVO" alias="TeamSearchListVO"/>
+		<typeAlias type="com.ktds.sems.team.vo.TeamSearchVO" alias="TeamSearchVO"/>
+		<typeAlias type="com.ktds.sems.team.vo.TeamBBSRplVO" alias="TeamBBSRplVO"/>
+		<typeAlias type="com.ktds.sems.member.vo.AttendVO" alias="AttendVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationQNAReplyVO" alias="EducationQNAReplyVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationQNAReplySearchVO" alias="EducationQNAReplySearchVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.EducationQNAReplyListVO" alias="EducationQNAReplyListVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.ReRplyEvalVO" alias="ReRplyEvalVO"/>
+		<typeAlias type="com.ktds.sems.education.vo.BBSReplyVO" alias="BBSReplyVO" />
+		<typeAlias type="com.ktds.sems.education.vo.EducationSearchVO" alias="EducationSearchVO"/>
+	</typeAliases>
+
+	<mappers>
+		<mapper resource="com/ktds/sems/team/dao/impl/sql/teamDAO.xml" />
+		<mapper resource="com/ktds/sems/education/dao/impl/sql/educationDAO.xml" />
+		<mapper resource="com/ktds/sems/file/dao/impl/sql/fileDAO.xml"/>
+		<mapper resource="com/ktds/sems/member/dao/impl/sql/memberDAO.xml"/>
+		<mapper resource="com/ktds/sems/teacher/dao/impl/sql/teacherDAO.xml"/>
+		<mapper resource="com/ktds/sems/cooperation/dao/impl/sql/cooperationDAO.xml"/>
+		<mapper resource="com/ktds/sems/pc/dao/impl/sql/pcDAO.xml"/>
+	</mappers>
+</configuration>

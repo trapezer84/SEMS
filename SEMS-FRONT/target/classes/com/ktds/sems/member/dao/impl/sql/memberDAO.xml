@@ -1,0 +1,932 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MemberDAO">
+	<select id="getNowDate">
+		SELECT	TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		FROM	DUAL
+	</select>
+	
+	<insert id="addNewMember" parameterType="MemberVO">
+		INSERT INTO MBR	(
+							ID
+							, PWD
+							, NM
+							, EMAIL
+							<if test="memberType == 'MBR'">
+							, HIGHEST_EDU_LV
+							, UNIV_NM
+							, MJR_NM
+							, GRDT_TP
+							</if>
+							, BRTH_DT
+							, PHONE_NMB
+							, MBR_TP
+							, SALT
+							, LATEST_LGI_DT
+						)
+		VALUES 			( 
+							#{id}
+							, #{password}
+							, #{name}
+							, #{email}
+							<if test="memberType == 'MBR'">
+							, #{highestEducationLevel}
+							, #{universityName}
+							, #{majorName}
+							, #{graduationType}
+							</if>
+							, #{birthDate}
+							, #{phoneNumber}
+							, #{memberType}
+							, #{salt}
+							, SYSDATE
+						)
+	</insert>
+	
+	<update id="insertUuidForResign" parameterType="MemberVO">
+		UPDATE	MBR
+		SET		UUID = #{uuid}
+		WHERE	ID = #{id}
+	</update>
+	
+	<update id="doDeleteMember" parameterType="string">
+		UPDATE	MBR
+		SET		RSN = 'Y'
+				, RSN_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	
+	<select id="getSaltById" parameterType="string" resultType="string">
+		SELECT	SALT salt
+		FROM	MBR
+		WHERE	ID = #{ id }
+	</select>
+	
+	<select id="getPasswordById" parameterType="string" resultType="string">
+		SELECT	PWD password
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	
+	<select id="login" parameterType="MemberVO" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP memberType
+				, SALT salt
+				, LGI_F_CT loginFailCount
+				, IS_ACC_LCK isAccountLock
+				, TO_CHAR(LATEST_LGI_DT, 'YYYY-MM-DD') latestLoginDate
+				, RSN_DT resignDate
+				, RSN isResign
+				, MDF_F_CT modifyFailCount
+				, IS_MDF_LCK isModifyLock
+				, UUID uuid
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		PWD = #{password}
+	</select>
+	<select id="isAccountLock" parameterType="string" resultType="string">
+		SELECT	IS_ACC_LCK
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+
+	<select id="isExistId" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	<select id="isResign" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		RSN = 'Y'
+	</select>
+
+	<insert id="stampLoginTime" parameterType="LoginHistoryVO">
+
+		INSERT INTO LGI_HTR	(
+								LGI_HTR_ID
+								, MBR_ID
+								, LGI_IP
+								, LGI_DT
+							) 
+		VALUES				(
+								#{ lgiHtrId }
+								, #{ id }
+								, #{ lgiIp }
+								, SYSDATE
+		 					)
+	</insert>
+	<select id="nextLoginHistorySeq" resultType="_int">
+		SELECT	LGI_HTR_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<update id="stampLogoutTime" parameterType="LoginHistoryVO">
+		UPDATE	LGI_HTR	
+		SET		LGO_DT = SYSDATE
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+	</update>
+	
+	<update id="stampLogoutTimeByMemberId" parameterType="string">
+		UPDATE	LGI_HTR	
+		SET		LGO_DT = SYSDATE
+		WHERE	LGI_HTR_ID = 	(
+									SELECT 	MAX(LGI_HTR_ID)
+									FROM	LGI_HTR
+									WHERE	MBR_ID = #{memberId}
+								)
+	</update>
+	
+	<select id="saveLoginHistoryAsExcel" resultType="LoginHistoryVO" parameterType="string">
+		SELECT	LGI_HTR_ID lgiHtrId
+				, MBR_ID id
+				, LGI_IP lgiIp
+				, LGI_DT lgiDt
+				, LGO_DT lgoDt
+		FROM	LGI_HTR
+		WHERE	MBR_ID = #{memberId}
+		ORDER	BY LGI_HTR_ID ASC
+	</select>
+	<update id="loginSuccess" parameterType="string">
+		UPDATE	MBR
+		SET		LGI_F_CT = 0
+				, IS_ACC_LCK = 'N'
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	<update id="plusLoginFailCount" parameterType="string">
+		UPDATE	MBR
+		SET		LGI_F_CT = LGI_F_CT + 1
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	<update id="updateAccountLock" parameterType="string">
+		UPDATE	MBR
+		SET		IS_ACC_LCK = 'Y'
+		WHERE	ID = #{id}
+		AND		LGI_F_CT >= 5
+	</update>
+	
+	<select id="getOneMember" parameterType="string" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password 
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP memberType
+				, UUID uuid
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	<update id="resetModifyLockAndCount" parameterType="string">
+		UPDATE	MBR
+		SET		MDF_F_CT = 0
+				, IS_MDF_LCK = 'N'
+		WHERE  ID  = #{id}
+	</update>
+	<update id="plusModifyFailCount" parameterType="string">
+		UPDATE	MBR
+		SET		MDF_F_CT = MDF_F_CT + 1
+		WHERE	ID = #{id}
+	</update>
+	<update id="updateModifyAccountLock" parameterType="string">
+		UPDATE	MBR
+		SET		IS_MDF_LCK = 'Y'
+		WHERE	ID = #{id}
+		AND		MDF_F_CT <![CDATA[>=]]> 3
+	</update>
+	<select id="isModifyAccountLock" parameterType="string" resultType="_int">
+		SELECT	COUNT(IS_MDF_LCK)
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		IS_MDF_LCK = 'Y'
+	</select>
+	<select id="needToChangPassword" parameterType="string" resultType="string">
+		SELECT	'Y'
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		(SYSDATE - LATEST_LGI_DT) >= 30
+	</select>
+
+	<select id="getTotalLoginHistoryCount" parameterType="LoginHistorySearchVO" resultType="_int">
+		SELECT	COUNT(LGI_HTR_ID)
+		FROM	LGI_HTR
+		WHERE	MBR_ID = #{id}
+		<if test="beginDate != null and beginDate != '' and beginDateTime == null">
+		AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{beginDate}, 'YYYY-MM-DD')		
+		AND		LGI_DT <![CDATA[<=]]> TO_DATE(#{closeDate}, 'YYYY-MM-DD') + 1
+		</if>	
+		<if test="beginTime != null and beginTime != '' and beginDateTime == null">
+		AND		TO_CHAR(LGI_DT, 'HH24:MI') <![CDATA[>=]]> #{beginTime}		
+		AND		TO_CHAR(LGI_DT, 'HH24:MI') <![CDATA[<=]]> #{closeTime}
+		</if>								
+		<if test="beginDate != null and beginDate != '' and beginDateTime != null ">
+		AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{beginDateTime}, 'YYYY-MM-DD HH24:MI')		
+		AND		LGI_DT <![CDATA[<=]]> (TO_DATE(#{closeDateTime}, 'YYYY-MM-DD HH24:MI'))
+		</if>	
+	</select>
+	
+	<select id="getAllLoginHistory" parameterType="LoginHistorySearchVO" resultType="LoginHistoryVO">
+		SELECT	LGI_HTR_ID lgiHtrId
+				, MBR_ID id
+				, LGI_IP lgiIp
+				,LGI_DT lgiDt
+				, LGO_DT lgoDt
+				, IS_REQ isReq
+				, CHK_CNT chkCnt
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, LOGIN_HISTORY.*
+					FROM	(
+								SELECT	*
+								FROM	LGI_HTR
+								WHERE	MBR_ID = #{id}
+								<if test="beginDate != null and beginDate != '' and beginDateTime == null">
+								AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{beginDate}, 'YYYY-MM-DD')		
+								AND		LGI_DT <![CDATA[<=]]> TO_DATE(#{closeDate}, 'YYYY-MM-DD') + 1
+								</if>								
+								<if test="beginDate != null and beginDate != '' and beginDateTime != null ">
+								AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{beginDateTime}, 'YYYY-MM-DD HH24:MI')		
+								AND		LGI_DT <![CDATA[<=]]> (TO_DATE(#{closeDateTime}, 'YYYY-MM-DD HH24:MI'))
+								</if>	
+								<if test="beginTime != null and beginTime != '' and beginDateTime == null">
+								AND		TO_CHAR(LGI_DT, 'HH24:MI') <![CDATA[>=]]> #{beginTime}		
+								AND		TO_CHAR(LGI_DT, 'HH24:MI') <![CDATA[<=]]> #{closeTime}
+								</if>								
+								ORDER BY LGI_HTR_ID DESC
+							) LOGIN_HISTORY
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				)
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<update id="modifyMemberInfo" parameterType="MemberVO" >
+		UPDATE	MBR
+		<set>
+				<if test="name != null">
+				NM = #{name},
+				</if>
+				<if test="password != null">
+				PWD = #{password},
+				</if>
+				<if test="email != null">
+				EMAIL = #{email},
+				</if>
+				<if test="highestEducationLevel != null">
+				HIGHEST_EDU_LV = #{highestEducationLevel},
+				</if>
+				<if test="graduationType != null">
+				GRDT_TP = #{graduationType},
+				</if>
+				<if test="birthDate != null">
+				BRTH_DT = #{birthDate},
+				</if>
+				<if test="phoneNumber != null">
+				PHONE_NMB = #{phoneNumber},
+				</if>
+				<if test="salt != null">
+				SALT = #{salt},
+				</if>
+		</set>
+		WHERE	ID = #{id}
+	</update>
+	
+	<select id="getEduListByMember" parameterType="MemberVO" resultType="EducationVO">
+		SELECT	E_I.EDU_ID educationId
+				, EDU_CTGR educationCategory
+				, EDU_TTL educationTitle
+				, E_I.MBR_ID memberId 
+				, MAX_MBR maxMember
+				, EDU_LOC educationLocation
+				, EDU_CLCM educationCurriculum
+				, EDU_INTR educationIntroduce
+				, SRT_DATE startDate
+				, END_DATE endDate
+				, START_TM startTime
+				, END_TM endTime
+				, EDU_TP educationType
+				, COST cost
+		FROM	EDU_INFO E_I, EDU_CLASS E_C
+		WHERE   E_I.EDU_ID = E_C.EDU_ID
+		AND		E_C.MBR_ID = #{id}
+		AND     E_C.STAT = 'EDU_JN_C'
+	</select>
+	
+	<insert id="insertAttendByMember" parameterType="AttendVO">
+		INSERT INTO ATD (
+   							ID
+   							, MBR_ID
+   							, ATD_TM
+   							, EDU_ID
+   							, LEAV_TM
+   						) 
+				VALUES 	( 
+							ATD_ID_SEQ.NEXTVAL
+							, #{memberId}
+				 			, #{attendTime}
+				 			, #{educationId}
+				 			, #{attendTime}
+				  		)
+	</insert>
+	
+	<select id="getLastDate" parameterType="map" resultType="string">
+		SELECT	*
+		FROM	(
+		            SELECT  SUBSTR(ATD_TM, 1,10) ATD1
+		            FROM    ATD
+		            WHERE	MBR_ID = #{memberId}
+		            AND		EDU_ID = #{educationId}
+		            ORDER	BY ATD1 DESC
+		        )
+		WHERE  ROWNUM = 1
+	</select>
+	
+	<select id="isExistEmail" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	EMAIL = #{email}
+	</select>
+	
+	<select id="getMenuCategoryList" resultType="MenuManageVO" >
+		SELECT 	CD_ID codeId
+				, CD_NM codeName
+				, URL url
+				, SRT sort
+		FROM 	MENU_MNG
+		ORDER 	BY SRT
+	</select>
+	
+	<update id="changePassword" parameterType="MemberVO">
+		UPDATE	MBR
+		SET		SALT = #{salt}
+				, PWD = #{password}
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>	
+	
+	<select id="isTeacher" parameterType="string" resultType="_int">
+		SELECT	COUNT(ID)
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		MBR_TP = 'TR'
+	</select>
+	
+	<select id="isAdmin" parameterType="string" resultType="_int">
+		SELECT	COUNT(ID)
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		MBR_TP = 'ADM'
+	</select>
+	
+	<delete id="delectJunitTestMember" parameterType="string">
+		DELETE
+		FROM	MBR
+		WHERE	ID = #{id}
+	</delete>
+	<select id="doMatchHistoryWithMember" parameterType="LoginHistoryVO" resultType="string">
+		SELECT	'Y'
+		FROM	LGI_HTR
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+		AND		MBR_ID = #{id}
+	</select>
+	
+	<update id="doRequestIpHistory" parameterType="_int">
+		UPDATE	LGI_HTR 
+		SET		IS_REQ = 'Y'
+		WHERE  	LGI_HTR_ID = #{lgiHtrId}
+	</update>
+	
+	<select id="getAllEducationHistoryListByIdWithPaging" parameterType="EducationHistorySearchVO" resultType="EducationHistoryVO">
+		SELECT	EH.EDU_HTR_ID educationHistoryId
+				, EH.EDU_ID educationId
+				, EH.MBR_ID memberId
+				, EH.EDU_HTR_DT educationHistoryDate
+				, EH.STAT state
+				, EH.IP ip
+				, EH.CMNT cmnt
+				, EH.FDBK fdbk
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+				, EI.EDU_TTL educationTitle
+				, EI.COST cost
+				, EC.CD_NM costName
+				, CD.CD_NM cdNm
+		FROM	EDU_INFO EI
+				, CODE_MNG CD
+				, EDU_CST EC
+				, (
+					SELECT	ROWNUM AS RNUM
+							, EDUCATION_HISTORY.*
+					FROM	(
+								SELECT	EH.EDU_HTR_ID
+										, EH.EDU_ID
+										, EH.MBR_ID
+										, EH.EDU_HTR_DT
+										, EH.STAT
+										, EH.IP
+										, EH.CMNT
+										, EH.FDBK
+										, EI.SRT_DATE
+										, EI.END_DATE
+										, EI.EDU_TTL
+										, EI.COST
+								FROM	EDU_HTR EH
+										, EDU_INFO EI
+								WHERE	EH.MBR_ID = #{memberId}
+								AND		EH.EDU_ID = EI.EDU_ID
+								<if test="searchType == 'eduName'">
+								AND		EI.EDU_TTL LIKE '%'||#{searchEduName}||'%'
+								</if>
+								<if test="searchType == 'cost'">
+								AND		EI.COST LIKE '%'||#{searchCost}||'%'
+								</if>
+								<if test="searchType == 'applyDate'">
+								AND		EH.EDU_HTR_DT <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')	
+								AND		EH.EDU_HTR_DT <![CDATA[<=]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+								</if>
+								<if test="searchType == 'applyState'">
+								AND		EH.STAT LIKE '%'||#{searchApplyState}||'%'
+								</if>
+								ORDER BY EH.EDU_HTR_ID DESC
+							) EDUCATION_HISTORY
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) EH
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+		AND		EI.EDU_ID = EH.EDU_ID
+		AND		EH.STAT = CD.CD_ID
+		AND		EI.COST = EC.CD_ID
+	</select>
+		
+	<select id="getTotalEducationHistoryCountById" parameterType="EducationHistorySearchVO" resultType="_int">
+		SELECT	COUNT(EH.EDU_HTR_ID)
+		FROM	EDU_HTR EH
+				, EDU_INFO EI
+		WHERE	EH.MBR_ID = #{memberId}
+		AND		EH.EDU_ID = EI.EDU_ID
+		<if test="searchType == 'eduName'">
+		AND		EI.EDU_TTL LIKE '%'||#{searchEduName}||'%'
+		</if>
+		<if test="searchType == 'cost'">
+		AND		EI.COST LIKE '%'||#{searchCost}||'%'
+		</if>
+		<if test="searchType == 'applyDate'">
+		AND		EI.SRT_DATE <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')	
+		AND		EI.END_DATE <![CDATA[<=]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+		</if>
+		<if test="searchType == 'applyState'">
+		AND		EH.STAT LIKE '%'||#{searchApplyState}||'%'
+		</if>
+	</select>
+	
+	<select id="getAllEducationHistoryListById" parameterType="string" resultType="EducationHistoryVO">
+		SELECT	EI.EDU_TTL educationTitle
+                , EH.EDU_HTR_DT educationHistoryDate
+				, CM.CD_NM cdNm
+				, EC.CD_NM costName
+				, EH.CMNT cmnt
+				, EH.FDBK fdbk
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+				, EH.IP ip
+		FROM	EDU_HTR EH
+				, EDU_INFO EI
+				, CODE_MNG CM
+				, EDU_CST EC
+		WHERE	EI.EDU_ID = EH.EDU_ID
+		AND		CM.CD_ID = EH.STAT
+		AND		EI.COST = EC.CD_ID
+		AND		EH.MBR_ID = #{id}
+	</select>
+	
+	<select id="doCheckIp" parameterType="LoginHistoryVO" resultType="_int">
+		SELECT	'1'
+		FROM	LGI_HTR
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+		AND		MBR_ID = #{id}
+	</select>
+	
+	<select id="checkIpInfo" parameterType="LoginHistoryVO" resultType="LoginHistoryVO">
+		SELECT	LGI_HTR_ID lgiHtrId
+				, MBR_ID id
+				, LGI_IP lgiIp
+				, CHK_CNT chkCnt
+				,LGI_DT lgiDt
+				, LGO_DT lgoDt
+		FROM	LGI_HTR
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+		AND		MBR_ID = #{id}
+	</select>
+	
+	<update id="ipCheckCountUpdate" parameterType="LoginHistoryVO">
+		UPDATE	LGI_HTR
+		SET		CHK_CNT	= 0
+				, IS_REQ = ''
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+		AND		MBR_ID = #{id}
+	</update>
+	
+	<select id="getJoinEducationList" parameterType="string" resultType="EducationHistoryVO">
+		SELECT	EH.EDU_HTR_ID educationHistoryId
+				, EH.EDU_ID educationId
+				, EH.MBR_ID memberId
+				, EH.EDU_HTR_DT educationHistoryDate
+				, EH.STAT state
+				, EH.IP ip
+				, EH.CMNT cmnt
+				, EH.FDBK fdbk
+				, EI.EDU_TTL educationTitle
+				, EI.COST cost
+				, EC.CD_NM costName
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+				, CM.CD_NM cdNm
+		FROM	EDU_INFO EI
+				, EDU_HTR EH
+				, CODE_MNG CM
+				, EDU_CST EC
+		WHERE	EI.EDU_ID = EH.EDU_ID
+		AND		CM.CD_ID = EH.STAT
+		AND		EH.MBR_ID = #{memberId}	
+		AND		EH.STAT LIKE 'EDU_JN_C'	
+		AND		EI.COST = EC.CD_ID
+		AND		TO_DATE(EI.SRT_DATE,'YYYY-MM-DD') <![CDATA[<=]]> SYSDATE
+		AND		(TO_DATE(EI.END_DATE,'YYYY-MM-DD') + 1) <![CDATA[>=]]> SYSDATE
+	</select>
+	
+	<select id="getStatList" resultType="EducationStateVO">
+		SELECT	CD_NM codeName
+				, CD_ID codeId
+		FROM	CODE_MNG
+		WHERE	CD_ID LIKE 'EDU_%'
+	</select>
+	
+	<select id="getCostList" resultType="EducationCostVO">
+		SELECT	CD_NM codeName
+				, CD_ID codeId
+		FROM	EDU_CST
+	</select>
+
+	<select id="getCourseCountById" parameterType="string" resultType="_int">
+		SELECT	COUNT(EI.EDU_ID)
+		FROM	EDU_INFO EI
+				, (
+					SELECT	ROWNUM AS RNUM
+							, EDU_HTR_M.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_HTR
+								WHERE	MBR_ID = #{id}
+								AND		STAT = 'EDU_JN_C'
+							) EDU_HTR_M
+				) EH
+		WHERE	EI.EDU_ID = EH.EDU_ID
+		AND		EI.END_DATE <![CDATA[<]]> TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+	</select>
+	
+	<select id="getCourseList" parameterType="string" resultType="EducationVO">
+		SELECT	EI.EDU_ID educationId
+				, EI.EDU_TTL educationTitle
+				, EH.MBR_ID memberId
+				, EH.STAT status
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+		FROM	EDU_INFO EI
+				, (
+					SELECT	ROWNUM AS RNUM
+							, EDU_CLASS_M.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_CLASS
+								WHERE	MBR_ID = #{memberId}
+								AND		STAT = 'EDU_JN_C'
+							) EDU_CLASS_M
+				) EH
+		WHERE	EI.EDU_ID = EH.EDU_ID
+		AND		EI.SRT_DATE <![CDATA[<=]]> TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		AND		EI.END_DATE <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		ORDER BY EI.EDU_ID DESC
+	</select>
+	
+	<select id="getPreCourseList" parameterType="EducationSearchVO" resultType="EducationVO">
+		SELECT	EI.EDU_ID educationId
+				, EI.EDU_TTL educationTitle
+				, EH.MBR_ID memberId
+				, EH.STAT status
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+		FROM	EDU_INFO EI
+				, (
+					SELECT	ROWNUM AS RNUM
+							, EDU_HTR_M.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_CLASS
+								WHERE	MBR_ID = #{memberId}
+								AND		STAT = 'EDU_JN_C'
+							) EDU_HTR_M
+				) EH
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+		AND     RNUM <![CDATA[<=]]> #{endIndex}
+		AND		EI.EDU_ID = EH.EDU_ID
+		<if test="searchKeyword != null and searchKeyword != ''">
+		AND		EI.EDU_TTL LIKE '%'|| #{searchKeyword} ||'%'
+		</if>
+		<if test="searchStartDate != null and searchStartDate != ''">
+		AND		EI.SRT_DATE <![CDATA[>=]]> TO_DATE(#{searchStartDate}, 'YYYY-MM-DD')	
+		AND		EI.END_DATE <![CDATA[<=]]> TO_DATE(#{searchEndDate}, 'YYYY-MM-DD') + 1	
+		</if>
+		AND		EI.END_DATE <![CDATA[<]]> TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		ORDER BY EI.EDU_ID DESC
+	</select>
+
+	<select id="getOneEducationByIdAndEducationId" parameterType="map" resultType="EducationHistoryVO">
+		SELECT	EH.EDU_HTR_ID educationHistoryId
+				, EH.EDU_ID educationId
+				, EH.MBR_ID memberId
+				, EH.EDU_HTR_DT educationHistoryDate
+				, EH.STAT state
+				, EH.IP ip
+				, EH.CMNT cmnt
+				, EH.FDBK fdbk
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+				, EI.EDU_TTL educationTitle
+		FROM	EDU_HTR EH
+                , EDU_INFO EI
+		WHERE	EH.EDU_ID = #{educationId}
+		AND     EH.EDU_ID = EI.EDU_ID
+		AND		EH.MBR_ID = #{id}
+		AND     EH.STAT = 'EDU_JN_C'
+		AND     EI.END_DATE <![CDATA[>=]]> SYSDATE
+	</select>
+	
+	<update id="dropCourseApply" parameterType="EducationHistoryVO">
+		UPDATE	SEMS.EDU_HTR
+		SET		EDU_HTR_DT = SYSDATE
+				, STAT = 'EDU_GU_A'
+				<!-- , STAT = 'EDU_JN_C'  -->
+				, CMNT = #{cmnt}
+		WHERE	EDU_ID = #{educationId}
+		AND		MBR_ID = #{memberId}
+	</update>
+		
+	<select id="getGraduationTypes"	resultType="GraduationTypeVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	GRDT_TP
+	</select>
+		
+	<select id="getHighestEducationLevels"	resultType="HighestEducationLevelVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	HIGHEST_EDU_LV
+	</select>
+		
+	<select id="getMemberTypes"	resultType="MemberTypeVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	MBR_TP
+	</select>
+	
+	<select id="getSelectMemberTypeCodeName" resultType="string" parameterType="string">
+		SELECT	CD_NM cdNm
+		FROM	MBR_TP
+		WHERE	CD_ID = #{cdId}
+	</select>
+	
+	<select id="getLoginHistoryListByMemberId" parameterType="string" resultType="LoginHistoryVO">
+		SELECT  LGI_HTR_ID lgiHtrId
+        		, MBR_ID id
+        		, LGI_IP lgiIp
+		        , LGI_DT lgiDt
+		        , LGO_DT lgoDt
+		        , IS_REQ isReq
+		        , CHK_CNT chkCnt
+		FROM    (
+		            SELECT *
+		            FROM LGI_HTR
+		            WHERE   MBR_ID = #{id}
+		            ORDER BY LGI_DT DESC
+		        )
+		WHERE   ROWNUM <![CDATA[<=]]> 10
+	</select>
+	
+	<select id="getEducationHistoryListByMemberId" parameterType="string" resultType="EducationHistoryVO" >
+		SELECT	EH.EDU_HTR_ID educationHistoryId
+				, EH.EDU_ID educationId
+				, EH.MBR_ID memberId
+				, EH.EDU_HTR_DT educationHistoryDate
+				, EH.STAT state
+				, EH.IP ip
+				, EH.CMNT cmnt
+				, EH.FDBK fdbk
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+				, EI.EDU_TTL educationTitle
+				, EI.COST cost
+				, EC.CD_NM costName
+				, CD.CD_NM cdNm
+		FROM	EDU_INFO EI
+				, CODE_MNG CD
+				, EDU_CST EC
+				, (
+					SELECT  EDUCATION_HISTORY.*
+					FROM	(
+								SELECT	EH.EDU_HTR_ID
+										, EH.EDU_ID
+										, EH.MBR_ID
+										, EH.EDU_HTR_DT
+										, EH.STAT
+										, EH.IP
+										, EH.CMNT
+										, EH.FDBK
+										, EI.SRT_DATE
+										, EI.END_DATE
+										, EI.EDU_TTL
+										, EI.COST
+								FROM	EDU_HTR EH
+										, EDU_INFO EI
+								WHERE	EH.MBR_ID = #{id}
+								AND		EH.EDU_ID = EI.EDU_ID
+								ORDER BY EH.EDU_HTR_DT DESC
+							) EDUCATION_HISTORY
+				) EH
+		WHERE		EI.EDU_ID = EH.EDU_ID
+		AND		EH.STAT = CD.CD_ID
+		AND		EI.COST = EC.CD_ID
+        AND     ROWNUM <![CDATA[<=]]> 10
+	</select>
+	
+	<select id="getQnaListByMemberId" parameterType="string" resultType="QNAVO">
+		SELECT	Q.REPLY_ID replyId
+				, Q.EDU_ID eduId
+				, Q.PARENT_REPLY_ID parentReplyId
+				, Q.ORDER_NO orderNo
+				, Q.DESCRIPTION description
+				, Q.MBR_ID mbrId
+				, Q.LIKE_CNT likeCnt
+				, Q.DISLIKE_CNT dislikeCnt
+				, Q.CREATED_DATE createdDate
+				, NVL ( (
+						SELECT	DISTINCT 'Y'
+						FROM	QNA
+						WHERE	PARENT_REPLY_ID IN Q.REPLY_ID
+				) , 'N' ) isAnswered
+				, EDU_TTL educationTitle
+		FROM	(
+					SELECT	QNA.*
+					FROM	(
+								SELECT	*
+								FROM	QNA
+								WHERE	MBR_ID = #{id}
+								AND		PARENT_REPLY_ID = '0'
+								ORDER	BY REPLY_ID DESC
+							) QNA
+				) Q
+				, EDU_INFO
+        WHERE   Q.EDU_ID = EDU_INFO.EDU_ID
+        AND     ROWNUM <![CDATA[<=]]> 10
+	</select>
+		
+	<select id="checkRegistState" resultType="_int" parameterType="string">
+		SELECT	COUNT(ID)
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	
+	<select id="checkValidationCourseAccess" resultType="_int" parameterType="string">
+		SELECT	COUNT(EDU_HTR_ID)
+		FROM	EDU_HTR
+		WHERE	STAT = 'EDU_JN_C'
+		AND		MBR_ID = #{memberId}
+	</select>
+	
+	<select id="getAllAttendHistoryListById" resultType="AttendVO" parameterType="map">
+		SELECT  MBR_ID memberId
+				, ATD_TM attendTime
+				, EDU_ID educationId
+				, LEAV_TM leaveTime
+		FROM    ATD
+		WHERE   EDU_ID = #{educationId}
+		AND     MBR_ID = #{memberId}
+	</select>
+	
+	<select id="isVerifyLeave" resultType="_int" parameterType="string">
+		SELECT  COUNT(A.MBR_ID)
+		FROM    EDU_CLASS EC 
+                , ATD A
+                , EDU_INFO EI
+ 		WHERE   A.EDU_ID = EC.EDU_ID
+ 		AND     EC.EDU_ID = EI.EDU_ID
+ 		AND     STAT= 'EDU_JN_C'
+ 		AND     A.MBR_ID = 'test02'		
+ 		AND     TO_CHAR(SYSDATE, 'YYYY-MM-DD') = SUBSTR(ATD_TM, 1, 10)
+ 		AND     EI.END_TM >= TO_CHAR(SYSDATE, 'HH24:MI')
+	</select>
+	
+	<update id="updateLeaveClass" parameterType="string">
+		UPDATE ATD
+		SET    LEAV_TM = TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI')
+		WHERE  MBR_ID = #{memberId}
+		AND    TO_CHAR(SYSDATE, 'YYYY-MM-DD') = SUBSTR(ATD_TM, 1, 10)
+	</update>
+	
+	<select id="getNowClassInfoById" resultType="AttendVO" parameterType="string">
+		SELECT	A.ID id
+				, A.MBR_ID memberId
+				, A.ATD_TM attendTime
+				, A.EDU_ID leaveTime
+				, A.LEAV_TM educationId
+		FROM    ATD A, EDU_INFO E
+		WHERE   A.EDU_ID = E.EDU_ID
+		AND     A.MBR_ID = #{memberId}
+		AND		TO_CHAR(SYSDATE, 'YYYY-MM-DD') = SUBSTR(ATD_TM, 1, 10)
+		AND		TO_CHAR(SYSDATE, 'HH:MM') <![CDATA[<=]]> E.END_TM
+	</select>
+	
+	<select id="getOneEducationInfo" resultType="EducationVO" parameterType="map">
+		SELECT	E_I.EDU_ID educationId
+				, EDU_CTGR educationCategory
+				, EDU_TTL educationTitle
+				, E_I.MBR_ID memberId 
+				, MAX_MBR maxMember
+				, EDU_LOC educationLocation
+				, EDU_CLCM educationCurriculum
+				, EDU_INTR educationIntroduce
+				, SRT_DATE startDate
+				, END_DATE endDate
+				, START_TM startTime
+				, END_TM endTime
+				, EDU_TP educationType
+				, COST cost
+		FROM	EDU_INFO E_I, EDU_CLASS E_C
+		WHERE   E_I.EDU_ID = E_C.EDU_ID
+		AND		E_C.MBR_ID = #{memberId}
+		AND     E_C.STAT = 'EDU_JN_C'
+		AND     E_C.EDU_ID = #{educationId}
+	</select>
+	
+	<select id="getReportReplyListByMemberId" parameterType="string" resultType="ReportReplyVO" >
+		SELECT  	EDI.ATC_ID		atcId
+		            , EDI.TITLE		title
+		            , EDI.EDU_ID	eduId
+		            , EDI.EDU_TTL	eduTtl
+		            , EDI.RPT_RPL_ID	rptRplId
+		            , EDI.CREATE_DATE	createdDate
+		 FROM    (
+		            SELECT ROWNUM AS RNUM
+		                   , EDI.*
+		                   , RPT_RPL.*
+		            FROM   (
+			                    SELECT  EDU_RPT_BBS.ATC_ID
+			                            ,EDU_RPT_BBS.TITLE
+			                            , EDI.EDU_TTL
+			                            , EDI.EDU_ID
+			                    FROM(
+				                        SELECT  ECL.EDU_ID
+				                                ,EDU_INFO.EDU_TTL
+				                        FROM(
+				                                SELECT  EDU_ID
+				                                FROM    EDU_CLASS
+				                                WHERE   MBR_ID = #{id}
+				                                AND     STAT = 'EDU_JN_C'
+				                                ) ECL
+				                                , EDU_INFO
+				                        WHERE ECL.EDU_ID = EDU_INFO.EDU_ID
+				                        ) EDI
+				                        , EDU_RPT_BBS
+			                    WHERE EDI.EDU_ID = EDU_RPT_BBS.EDU_ID
+		                    ) EDI
+		                    , RPT_RPL
+		             WHERE  EDI.ATC_ID = RPT_RPL.BBS_ID
+		             ORDER  BY  RPT_RPL.RPT_RPL_ID DESC
+		            ) EDI
+		 WHERE	ROWNUM <![CDATA[<=]]> 10
+	</select>
+	<delete id="deleteJunitTestStampLoginTime">
+		DELETE
+		FROM	LGI_HTR
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+	</delete>
+	<select id="currentLoginHistorySeq" resultType="_int">
+		SELECT  LGI_HTR_ID_SEQ.CURRVAL
+		FROM    DUAL
+	</select>
+	
+</mapper>

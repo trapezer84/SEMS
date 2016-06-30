@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FileDAO" >
+
+	<insert id="doWriteFile" parameterType="fileVO"  >
+	INSERT INTO SEMS.FILES (
+							   FILE_ID
+							   , FILE_NM
+							   , FILE_LOC
+							   , ATC_ID
+							) 
+	VALUES 					(  FILE_ID_SEQ.NEXTVAL
+								, #{fileName }
+								, #{fileLocation}
+								, #{articleId }
+							)
+	</insert>
+	
+	<update id="updateFile" parameterType="fileVO">
+	UPDATE	FILES
+	SET		ATC_ID = #{articleId}
+	<if test="fileName != null">
+	 		, FILE_NM = #{fileName}
+	</if>
+	<if test="fileLocation != null">
+	 		, FILE_LOC = #{fileLocation}
+	</if>
+	WHERE	ATC_ID = #{articleId}
+		
+	</update>
+</mapper>

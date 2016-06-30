@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="pcDAO" class="com.ktds.sems.pc.dao.impl.PcDAOImpl">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate" />
+	</bean>
+	
+	<bean id="pcBiz" class="com.ktds.sems.pc.biz.impl.PcBizImpl">
+		<property name="pcDAO" ref="pcDAO" />
+	</bean>
+	
+	<bean id="pcService" class="com.ktds.sems.pc.service.impl.PcServiceImpl">
+		<property name="pcBiz" ref="pcBiz" />
+	</bean>
+	
+</beans>

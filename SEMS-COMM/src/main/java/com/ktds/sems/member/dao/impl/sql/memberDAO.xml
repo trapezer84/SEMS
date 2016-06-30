@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+		
+<!-- 현재 articleDAO의 이름 앞에 첫 글자는 대문자로 적는다. 패키지의 일종이다 -->
+<mapper namespace="MemberDAO">
+
+	<select id="isExistCdNmData" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	GRDT_TP
+		WHERE	CD_NM = #{cdNm}
+	</select>
+
+	<select id="isExistData" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	GRDT_TP
+		WHERE	CD_ID = #{cdId}
+		OR		CD_NM = #{cdNm}
+	</select>
+	
+	<select id="isExistHighestEduData" parameterType="HighestEduTpVO" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	HIGHEST_EDU_LV
+		WHERE	CD_ID = #{cdId}
+		OR		CD_NM = #{cdNm}
+	</select>
+
+	<select id="getNowSystemDate" resultType="string">
+		SELECT	SYSDATE
+		FROM	DUAL
+	</select>
+	
+	<select id="getAllMbrTp" resultType="MbrTpVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	MBR_TP
+	</select>
+	
+	<insert id="doInsertMbrTp" parameterType="MbrTpVO">
+		INSERT INTO MBR_TP (
+		                    CD_ID
+		                    , CD_NM
+		                    ) 
+		VALUES				( 
+					        #{cdId}
+					        , #{cdNm}
+					        )
+	</insert>
+	
+	<delete id="doMbrTpDelete" parameterType="string">
+		DELETE
+		FROM	MBR_TP
+		WHERE	CD_ID = #{cdId}
+	</delete>
+
+	<update id="doMbrTpModify" parameterType="MbrTpVO">
+		UPDATE	MBR_TP
+		SET		CD_NM = #{cdNm}
+		WHERE	CD_ID = #{cdId}
+	</update>
+	
+	<select id="isExistMbrTpData" resultType="_int">
+		SELECT	COUNT(CD_ID)
+		FROM	MBR_TP
+		WHERE	CD_ID = #{cdId}
+		OR		CD_NM = #{cdNm}
+	</select>
+
+
+
+
+
+
+	<select id="getAllGrtdList" resultType="GrdtTpVO">
+		SELECT	CD_ID	cdId
+				, CD_NM	cdNm
+		FROM	GRDT_TP
+	</select>
+	
+	<select id="getAllHighestEduList" resultType="HighestEduTpVO">
+		SELECT	CD_ID	cdId
+				, CD_NM	cdNm
+		FROM	HIGHEST_EDU_LV
+	</select>
+
+	<delete id="doGrdtDelete" parameterType="string">
+		DELETE
+		FROM	GRDT_TP
+		WHERE	CD_ID = #{cdId}
+	</delete>
+
+	<update id="doGrdtModify" parameterType="GrdtTpVO">
+		UPDATE	GRDT_TP
+		SET		CD_NM = #{cdNm}
+		WHERE	CD_ID = #{cdId}
+	</update>
+	
+	<insert id="doGrdtInsert" parameterType="GrdtTpVO">
+		INSERT INTO GRDT_TP (
+				 			  CD_ID
+				 			  , CD_NM
+				 			  ) 
+		VALUES 				(
+								#{cdId}
+								, #{cdNm}
+							 )
+	</insert>
+	
+	<delete id="doHighestEduDelete" parameterType="string">
+		DELETE
+		FROM	HIGHEST_EDU_LV
+		WHERE	CD_ID = #{cdId}
+	</delete>
+
+	<update id="doHighestEduModify" parameterType="HighestEduTpVO">
+		UPDATE	HIGHEST_EDU_LV
+		SET		CD_NM = #{cdNm}
+		WHERE	CD_ID = #{cdId}
+	</update>
+	
+	<insert id="doHighestEduInsert" parameterType="HighestEduTpVO">
+		INSERT INTO HIGHEST_EDU_LV	(
+							 			  CD_ID
+							 			  , CD_NM
+						 			) 
+		VALUES 						(
+										#{cdId}
+										, #{cdNm}
+									 )
+	</insert>
+
+	<!-- 로그인 -->
+	<select id="isExistId" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	<select id="isAccountLock" parameterType="string" resultType="string">
+		SELECT	IS_ACC_LCK
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	<update id="loginSuccess" parameterType="string">
+		UPDATE	MBR
+		SET		LGI_F_CT = 0
+				, IS_ACC_LCK = 'N'
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	<select id="needToChangPassword" parameterType="string" resultType="string">
+		SELECT	'Y'
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		(SYSDATE - LATEST_LGI_DT) >= 30
+	</select>
+	<update id="plusLoginFailCount" parameterType="string">
+		UPDATE	MBR
+		SET		LGI_F_CT = LGI_F_CT + 1
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	<update id="updateAccountLock" parameterType="string">
+		UPDATE	MBR
+		SET		IS_ACC_LCK = 'Y'
+		WHERE	ID = #{id}
+		AND		LGI_F_CT >= 5
+	</update>
+	<select id="getSaltById" parameterType="string" resultType="string">
+		SELECT	SALT salt
+		FROM	MBR
+		WHERE	ID = #{ id }
+	</select>
+	<select id="login" parameterType="MemberVO" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP memberType
+				, SALT salt
+				, LGI_F_CT loginFailCount
+				, IS_ACC_LCK isAccountLock
+				, TO_CHAR(LATEST_LGI_DT, 'YYYY-MM-DD') latestLoginDate
+				, RSN_DT resignDate
+				, RSN isResign
+				, MDF_F_CT modifyFailCount
+				, IS_MDF_LCK isModifyLock
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		PWD = #{password}
+	</select>
+	<select id="isResign" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		RSN = 'Y'
+	</select>
+	<insert id="stampLoginTime" parameterType="LoginHistoryVO">
+
+		INSERT INTO LGI_HTR	(
+								LGI_HTR_ID
+								, MBR_ID
+								, LGI_IP
+								, LGI_DT
+							) 
+		VALUES				(
+								#{ lgiHtrId }
+								, #{ id }
+								, #{ lgiIp }
+								, SYSDATE
+		 					)
+	</insert>
+	<select id="nextLoginHistorySeq" resultType="_int">
+		SELECT	LGI_HTR_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<update id="stampLogoutTime" parameterType="LoginHistoryVO">
+		UPDATE	LGI_HTR	
+		SET		LGO_DT = SYSDATE
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+	</update>
+	
+	<update id="stampLogoutTimeByMemberId" parameterType="string">
+		UPDATE	LGI_HTR	
+		SET		LGO_DT = SYSDATE
+		WHERE	LGI_HTR_ID = 	(
+									SELECT 	MAX(LGI_HTR_ID)
+									FROM	LGI_HTR
+									WHERE	MBR_ID = #{memberId}
+								)
+	</update>
+	
+	<select id="getAllCodeMngList" resultType="CodeMngVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+				, CD_TP cdTp
+				, CD_TP_2 cdTp2
+		FROM	CODE_MNG
+	</select>
+	
+	<delete id="doCodeMngDelete" parameterType="string">
+		DELETE
+		FROM	CODE_MNG
+		WHERE	CD_ID = #{cdId}
+	</delete>
+	<update id="doCodeMngModify" parameterType="codeMngVO">
+		UPDATE	CODE_MNG	
+		SET		CD_NM = #{cdNm}
+				, CD_TP_2 = #{cdTp2}
+		WHERE	CD_ID = #{cdId}
+	</update>
+	<insert id="doCodeMngInsert">
+		INSERT INTO CODE_MNG (
+			                    CD_ID
+			                    , CD_NM
+			                    , CD_TP
+			                    , CD_TP_2
+		                    ) 
+		VALUES				( 
+						        #{cdId}
+						        , #{cdNm}
+						        , #{cdTp}
+						        , #{cdTp2}
+					        )
+	</insert>
+	
+</mapper>

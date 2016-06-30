@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">
+
+
+	<bean id="educationService"
+			class="com.ktds.sems.education.service.impl.EducationServiceImpl">
+		<property name="educationBiz" ref="educationBiz" />
+		<property name="fileBiz" ref="fileBiz" />
+	</bean>
+		
+	<bean id="educationBiz"
+			class="com.ktds.sems.education.biz.impl.EducationBizImpl"> 
+		<property name="educationDAO" ref="educationDAO" />
+	</bean>
+	
+	<bean id="educationDAO"
+			class="com.ktds.sems.education.dao.impl.EducationDAOImpl">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate" />		
+	</bean> 
+	
+</beans>

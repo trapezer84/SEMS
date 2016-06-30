@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TeamDAO">
+
+	<select id="selectAllTeamCount" parameterType="TeamSearchListVO" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	TEAM
+	</select>
+	
+	<select id="selectAllTeams" parameterType="TeamSearchVO" resultType="TeamVO">
+		SELECT  TEAM_ID teamId
+				, TEAM_NM teamName
+				, TEAM_DT teamDate
+				, EDU_ID educationId
+		FROM	(
+					SELECT 	ROWNUM AS RNUM
+							, TEAM.*
+					FROM	(
+								SELECT	*
+								FROM	TEAM
+								ORDER	BY TEAM_DT DESC
+							) TEAM
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) TEAM_1
+		WHERE	RNUM >= #{startIndex}
+		ORDER 	BY ROWNUM DESC
+	</select>
+	
+	<select id="selectMemberInfoByTeamId" parameterType="string" resultType="MemberVO">
+		SELECT	ID id
+				, NM name
+				, EMAIL email
+				, UNIV_NM universityName
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+		FROM 	MBR 
+		WHERE 	ID IN (
+						SELECT 	MBR_ID 
+						FROM 	TEAM_LIST 
+						WHERE 	TEAM_ID = #{teamId}
+					   )
+	</select>
+	
+	<select id="selectTeamBBSByTeamId" parameterType="string" resultType="TeamBBSVO" >
+		SELECT 	TEAM_BBS_ID teamBBSId
+				, TEAM_ID teamId
+				, TITLE title
+				, DESCRIPT descript
+				, HITS hits
+				, LIKE_CNT likeCount
+				, DISLIKE_CNT disLikeCount
+				, MBR_ID memberId
+				, CREATED_DATE createdDate
+				, MODIFIED_DATE modifiedDate
+				, IS_NOTICE isNotice
+		FROM 	TEAM_BBS
+		WHERE 	TEAM_ID = #{teamId}
+		ORDER	BY CREATED_DATE DESC
+	</select>
+	
+	<select id="selectOneTeamBBSDetailByTeamBBSId" parameterType="string" resultType="TeamBBSVO">
+		SELECT 	TEAM_BBS_ID teamBBSId
+				, TEAM_ID teamId
+				, TITLE title
+				, DESCRIPT descript
+				, HITS hits
+				, LIKE_CNT likeCount
+				, DISLIKE_CNT disLikeCount
+				, MBR_ID memberId
+				, CREATED_DATE createdDate
+				, MODIFIED_DATE modifiedDate
+				, IS_NOTICE isNotice
+		FROM 	TEAM_BBS
+		WHERE 	TEAM_BBS_ID = #{teamBBSId}
+		ORDER	BY CREATED_DATE DESC
+	</select>
+	
+	<select id="selectAllTeamBBSRpleByTeamBBSId" parameterType="string" resultType="TeamBBSRplVO">
+		SELECT 	TEAM_BBS_ID teamBBSId
+				, REPLY_ID replyId
+				, PARENT_REPLY_ID parentReplyId
+				, ORDER_NO orderNo
+				, MBR_ID mbrId
+				, LIKE_CNT likeCnt
+   				, GROUP_ID groupId
+   				, DISLIKE_CNT disLikeCount
+   				, DESCRIPT descript
+  				, DEPTH depth
+		FROM 	SEMS.TEAM_BBS_RPL
+		WHERE	TEAM_BBS_ID = #{teamBBSId}
+	</select>
+	
+	<select id="selectAllTeamByMemberId" parameterType="string" resultType="TeamVO">
+			SELECT  TEAM_ID teamId
+					, TEAM_NM teamName
+					, TEAM_DT teamDate
+					, EDU_ID educationId
+			FROM	TEAM
+			WHERE	TEAM_ID	IN (
+								SELECT 	TEAM_ID
+								FROM	TEAM_LIST
+								WHERE	MBR_ID = #{memberId}
+								)
+	</select>
+</mapper>

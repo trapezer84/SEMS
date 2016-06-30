@@ -1,0 +1,38 @@
+@CHARSET "UTF-8";
+
+
+table, th, td {
+    border: 1px solid black;
+}
+
+div.registNewReReply{
+	display:none;
+}
+
+div#table_calendar {
+	position: relative;
+
+}
+
+div#table {
+	margin-right: 5px;
+	margin-bottom: 100px;
+	width : 30%;
+	height: 1700px;
+	float: left;
+	position: relative;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+div#calendar {
+	margin-right: 10px;
+	width : 25%;
+	float: left;
+	position: relative;
+}
+div.clear {
+	clear : both;
+}

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<mvc:annotation-driven/>
+		<mvc:resources	location="/WEB-INF/resources/" mapping="/resources/**" />
+	
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<mvc:exclude-mapping path="/backend"/>
+			<mvc:exclude-mapping path="/backend/login"/>
+			<mvc:exclude-mapping path="/fabicon.ico" />
+			<mvc:exclude-mapping path="/resources/**" />
+			<bean id="backendInterceptor" class="com.ktds.sems.interceptor.BackendInterceptor"/>
+		</mvc:interceptor>
+	</mvc:interceptors>
+	
+	<bean id="viewResolver"
+			class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/view/" />
+		<property name="suffix" value=".jsp" />		
+	</bean>
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="1000000000"/>
+		<property name="maxInMemorySize" value="100000000" />
+	</bean>
+	
+	<bean id="customExceptionHandler" class="com.ktds.sems.handler.CustomExceptionHandler"></bean>
+	
+	<bean id="educationController"
+			class="com.ktds.sems.education.web.EducationController">
+			<property name="educationService" ref="educationService" />
+	</bean>
+
+    <bean id="memberController"
+    		class="com.ktds.sems.member.web.MemberController" >
+    		<property name="memberService" ref="memberService" />
+    </bean>
+	
+	<bean id="teacherController" class="com.ktds.sems.teacher.web.TeacherController">
+		<property name="teacherService" ref="teacherService" />
+	</bean>
+    
+    <bean id="cooperationController" class="com.ktds.sems.cooperation.web.CooperationController" >
+    	<property name="cooperationService" ref="cooperationService" />
+    </bean>
+	
+</beans>
+

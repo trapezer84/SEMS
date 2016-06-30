@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd">
+
+	<bean id="menuDAO" class="com.ktds.sems.menu.dao.impl.MenuDAOImpl">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate" />
+	</bean>
+
+	<bean id="menuBiz" class="com.ktds.sems.menu.biz.impl.MenuBizImpl">
+		<property name="menuDAO" ref="menuDAO" />
+	</bean>
+	
+	<bean id="menuService" class="com.ktds.sems.menu.service.impl.MenuServiceImpl">
+		<property name="menuBiz" ref="menuBiz" />
+	</bean>
+
+</beans>

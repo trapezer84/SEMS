@@ -1,0 +1,1842 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EducationDAO" >
+	<select id="getNextReplySeq" resultType="_int">
+		SELECT 	REPLY_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="getNowDate" resultType="string">
+		SELECT	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		FROM	DUAL
+	</select>
+
+	<select id="getTotalEducationCount" resultType="_int">
+		SELECT	COUNT(EDU_ID)
+		FROM	EDU_INFO
+	</select>
+
+	<select id="getSearchedEducationCount" parameterType="EducationVO" resultType="_int" >
+			SELECT	COUNT(*)
+			FROM	EDU_INFO
+			WHERE	1 = 1
+			<if test="startDate != null">
+	           AND SUBSTR(SRT_DATE, 1, 7) <![CDATA[ >= ]]> #{startDate} 
+	           AND SUBSTR(SRT_DATE, 1, 7) <![CDATA[ <= ]]> #{endDate}
+	        </if>
+	       <if test="cost != null">
+	           AND COST = (
+	           					SELECT	CD_ID
+	           					FROM	EDU_CST
+	           					WHERE	CD_NM =  #{cost} 
+	           				)
+	        </if>
+            <if test="educationType != null">
+	           AND EDU_TP = (
+		           				SELECT	CD_ID
+		           				FROM	EDU_TIME
+		           				WHERE	CD_NM = #{educationType} 
+		           			)
+	        </if>   
+ 		   <if test="educationTitle != null">
+	           AND LOWER(EDU_TTL) LIKE '%'||#{educationTitle}||'%'
+           </if>
+	</select> 
+	
+	<select id="getOneEducationDetail" parameterType="map" resultType="EducationVO">
+		SELECT	EDU.EDU_ID educationId
+				, EDU.EDU_CTGR educationCategory
+				, EDU.EDU_TTL educationTitle
+				, EDU.MBR_ID memberId
+				, EDU.MAX_MBR maxMember
+				, EDU.EDU_LOC educationLocation
+				, EDU.EDU_CLCM educationCurriculum
+				, EDU.EDU_INTR educationIntroduce
+				, EDU.SRT_DATE startDate
+				, EDU.END_DATE endDate
+				, EDU.START_TM startTime
+				, EDU.END_TM endTime
+				, EDU.EDU_TP educationType
+		 		, EDU_TIME.CD_NM typeName
+				, EDU_CST.CD_NM costName 
+		FROM	EDU_INFO EDU
+				, EDU_CST
+				, EDU_TIME
+		WHERE	EDU_ID LIKE #{educationId}
+		AND		EDU.COST = EDU_CST.CD_ID
+		AND		EDU.EDU_TP = EDU_TIME.CD_ID
+	</select>
+
+	<select id="getAllCommentByEducationId" parameterType="map" resultType="QNAVO">
+ 	SELECT	REPLY_ID replyId
+				, EDU_ID eduId
+				, PARENT_REPLY_ID parentReplyId
+				, ORDER_NO orderNo
+				, DESCRIPTION description
+				, MBR_ID mbrId
+				, LIKE_CNT likeCnt
+				, DISLIKE_CNT dislikeCnt
+				, TO_CHAR(CREATED_DATE, 'YYYY-MM-DD HH24:MI') createdDate
+				, DEP depth
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, QNA.*
+					FROM	(
+								SELECT	QNA.*,
+										LEVEL DEP
+								FROM	QNA
+								WHERE	EDU_ID = #{educationId}
+							 	START   WITH PARENT_REPLY_ID = '0'
+           						CONNECT BY PRIOR REPLY_ID = PARENT_REPLY_ID 
+							) QNA
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) QNA
+		WHERE	RNUM >= #{startIndex}		
+	</select>
+<!-- 	<select id="getAllCommentByEducationId" parameterType="string" resultType="QNAVO">
+		SELECT	REPLY_ID replyId
+				, EDU_ID eduId
+				, PARENT_REPLY_ID parentReplyId
+				, ORDER_NO orderNo
+				, DESCRIPTION description
+				, MBR_ID mbrId
+				, LIKE_CNT likeCnt
+				, DISLIKE_CNT dislikeCnt
+				, CREATED_DATE createdDate
+		FROM 	QNA
+		WHERE	EDU_ID = #{educationId}
+	</select> -->
+	
+	<select id="getAllEducationList" parameterType="EducationSearchVO" resultType="EducationVO">
+		SELECT	EDU.EDU_ID educationId
+				, EDU.EDU_CTGR educationCategory
+				, EDU.EDU_TTL educationTitle
+				, EDU.MBR_ID memberId
+				, EDU.MAX_MBR maxMember
+				, EDU.EDU_LOC educationLocation
+				, EDU.EDU_CLCM educationCurriculum
+				, EDU.EDU_INTR educationIntroduce
+				, EDU.SRT_DATE startDate
+				, EDU.END_DATE endDate
+				, EDU.START_TM startTime
+				, EDU.END_TM endTime
+				, EDU_TIME.CD_NM typeName
+				, EDU_CST.CD_NM costName
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, EDU_INFO.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_INFO
+								ORDER	BY EDU_ID DESC
+							) EDU_INFO
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) EDU
+				, EDU_CST
+				, EDU_TIME
+		WHERE	EDU.COST = EDU_CST.CD_ID
+		AND		EDU.EDU_TP = EDU_TIME.CD_ID
+		AND		RNUM >= #{startIndex}		
+	</select>
+
+
+	<select id="doSearchList" parameterType="map" resultType="EducationVO">
+		SELECT	EDU.EDU_ID educationId
+				, EDU.EDU_CTGR educationCategory
+				, EDU.EDU_TTL educationTitle
+				, EDU.MBR_ID memberId
+				, EDU.MAX_MBR maxMember
+				, EDU.EDU_LOC educationLocation
+				, EDU.EDU_CLCM educationCurriculum
+				, EDU.EDU_INTR educationIntroduce
+				, EDU.SRT_DATE startDate
+				, EDU.END_DATE endDate
+				, EDU.START_TM startTime
+				, EDU.END_TM endTime
+				, EDU_TIME.CD_NM typeName
+				, EDU_CST.CD_NM costName
+         FROM   (
+               SELECT   ROWNUM   AS RNUM
+                     , EDU_INFO.*
+               FROM   (
+                        SELECT   *
+                        FROM   EDU_INFO
+                        WHERE  1=1	 
+			          	<if test="educationVO.startDate != null">
+				           AND SUBSTR(SRT_DATE, 1, 7) <![CDATA[ >= ]]> #{educationVO.startDate} 
+				           AND SUBSTR(SRT_DATE, 1, 7) <![CDATA[ <= ]]> #{educationVO.endDate}
+				        </if>
+				        <if test="educationVO.cost != null">
+				           AND COST = (
+				           					SELECT	CD_ID
+				           					FROM	EDU_CST
+				           					WHERE	CD_NM =  #{educationVO.cost} 
+				           				)
+				        </if>
+ 					    <if test="educationVO.educationType != null">
+				           AND EDU_TP = (
+					           				SELECT	CD_ID
+					           				FROM	EDU_TIME
+					           				WHERE	CD_NM = #{educationVO.educationType} 
+					           			)
+				        </if>      
+			 		   <if test="educationVO.educationTitle != null">
+				           AND LOWER(EDU_TTL) LIKE '%'||#{educationVO.educationTitle} ||'%'
+			           </if>
+                        ORDER   BY EDU_ID DESC
+                     ) EDU_INFO
+               WHERE   ROWNUM <![CDATA[<=]]> #{searchVO.endIndex}
+            ) EDU
+            , EDU_CST
+			, EDU_TIME
+      WHERE   RNUM >= #{searchVO.startIndex}
+	  AND     EDU.COST = EDU_CST.CD_ID
+	  AND	  EDU.EDU_TP = EDU_TIME.CD_ID
+    </select>
+
+	 <insert id="insertNewComment" parameterType="QNAVO">
+			INSERT INTO SEMS.QNA (
+								   REPLY_ID 
+								   , EDU_ID 
+								   , PARENT_REPLY_ID 
+								   , ORDER_NO 
+								   , DESCRIPTION 
+								   , MBR_ID 
+								   , CREATED_DATE
+								   ) 
+						VALUES ( 
+								 #{replyId},
+								 #{eduId},
+								 '0',
+								 '4',
+								 #{description},
+								 #{mbrId},
+								 SYSDATE
+								 )			
+ 	</insert>
+ 	
+	<delete id="doCancelEducation" parameterType="string">
+		DELETE	
+		FROM	EDU_CLASS
+		WHERE	EDU_ID = #{educationId}
+		AND		MBR_ID = #{id}
+	</delete>
+    
+    <select id="getMemberRegInfo" parameterType="string"  resultType="EducationVO">
+    	SELECT	EDU.EDU_ID educationId
+				, EDU.EDU_CTGR educationCategory
+				, EDU.EDU_TTL educationTitle
+				, EDU.MBR_ID memberId
+				, EDU.MAX_MBR maxMember
+				, EDU.EDU_LOC educationLocation
+				, EDU.EDU_CLCM educationCurriculum
+				, EDU.EDU_INTR educationIntroduce
+				, EDU.SRT_DATE startDate
+				, EDU.END_DATE endDate
+				, EDU.START_TM startTime
+				, EDU.END_TM endTime
+				, EDU.EDU_TP educationType
+		 		, EDU_TIME.CD_NM typeName
+				, EDU_CST.CD_NM costName 
+		FROM	EDU_INFO EDU
+				, EDU_CST
+				, EDU_TIME
+		WHERE	EDU_ID IN (
+	                        SELECT  EDU_ID
+	                        FROM    EDU_CLASS
+	                        WHERE   MBR_ID = #{id}
+	                        )
+		AND		EDU.COST = EDU_CST.CD_ID
+		AND		EDU.EDU_TP = EDU_TIME.CD_ID
+    </select>
+    
+    <insert id="doApplyEducation" parameterType="map">
+    	INSERT INTO SEMS.EDU_HTR (
+								   EDU_HTR_ID
+								   , EDU_ID
+								   , MBR_ID
+								   , EDU_HTR_DT
+								   , STAT
+								   , IP
+								   , CMNT
+								   , FDBK
+								   ) 
+						VALUES ( 
+								EDU_HTR_ID_SEQ.NEXTVAL
+								, #{educationId}
+								, #{id}
+								, SYSDATE
+								, 'EDU_JN_A'
+								, '127.0.0.1'
+								, ''
+								, ''
+							 )
+   	</insert>
+   	
+   	<insert id="doReserveEducation" parameterType="map">
+    	INSERT INTO SEMS.EDU_HTR (
+								   EDU_HTR_ID
+								   , EDU_ID
+								   , MBR_ID
+								   , EDU_HTR_DT
+								   , STAT
+								   , IP
+								   , CMNT
+								   , FDBK
+								   ) 
+						VALUES ( 
+								EDU_HTR_ID_SEQ.NEXTVAL
+								, #{educationId}
+								, #{id}
+								, SYSDATE
+								, 'EDU_RE_A'
+								, '127.0.0.1'
+								, ''
+								, ''
+							 )
+   	</insert>
+    
+    <select id="isApplyMemberByEducationId" parameterType="map" resultType="string">
+    	SELECT  STAT
+    	FROM	EDU_CLASS
+    	WHERE	EDU_ID = #{educationId}
+    	AND		MBR_ID = #{id}
+    </select>
+    
+    <select id="getEduReplyCount" parameterType = "string" resultType="_int">
+   		SELECT 	COUNT(*)	
+		FROM	QNA
+		WHERE 	EDU_ID = #{educationId}
+    </select>
+    
+    <select id="getCostName" resultType="string">
+    	SELECT  CD_NM
+    	FROM	EDU_CST
+    </select>
+    
+    <select id="getTypeName" resultType="string">
+    	SELECT  CD_NM
+    	FROM	EDU_TIME
+    </select>
+	
+	<select id="doTransCostId" parameterType="string" resultType="string">
+		SELECT  CD_ID
+		FROM	EDU_CST
+		WHERE   CD_NM = #{cost}
+	</select>
+
+	<select id="doTransTypeId" parameterType="string" resultType="string">
+		SELECT  CD_ID
+		FROM	EDU_TIME
+		WHERE   CD_NM = #{educationType}
+	</select>
+	
+	<select id="getTotalQNACount" parameterType="QNASearchVO" resultType="_int">
+		SELECT	COUNT(REPLY_ID)
+		FROM	(
+					SELECT	QNA.*
+					FROM	(
+								SELECT	*
+								FROM	QNA
+								WHERE	MBR_ID = #{id}
+								AND		PARENT_REPLY_ID = '0'
+								<if test="searchKeyword != null and searchType != null">
+								AND		(
+										<if test="searchType == 'replyId'">
+											UPPER(REPLY_ID) LIKE UPPER('%' || #{searchKeyword} || '%')
+										</if>
+										<if test="searchType == 'eduId'">
+											UPPER(EDU_ID) LIKE UPPER('%' || #{searchKeyword} || '%')
+										</if>
+										<if test="searchType == 'description'">
+											UPPER(DESCRIPTION) LIKE UPPER('%' || #{searchKeyword} || '%')
+										</if>
+										)
+								</if>
+								<if test="startDate != null and startDate != ''">
+								AND		CREATED_DATE >= #{startDate}
+								</if>
+								<if test="endDate != null and endDate != ''">
+								AND		CREATED_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+								</if>
+								ORDER	BY REPLY_ID DESC
+							) QNA
+				) Q
+		WHERE	PARENT_REPLY_ID = '0'
+	</select>
+	
+	<select id="getAllQNAList" parameterType="QNASearchVO" resultType="QNAVO">
+		SELECT	Q.REPLY_ID replyId
+				, Q.EDU_ID eduId
+				, Q.PARENT_REPLY_ID parentReplyId
+				, Q.ORDER_NO orderNo
+				, Q.DESCRIPTION description
+				, Q.MBR_ID mbrId
+				, Q.LIKE_CNT likeCnt
+				, Q.DISLIKE_CNT dislikeCnt
+				, Q.CREATED_DATE createdDate
+				, NVL ( (
+						SELECT	DISTINCT 'Y'
+						FROM	QNA
+						WHERE	PARENT_REPLY_ID IN Q.REPLY_ID
+				) , 'N' ) isAnswered
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, QNA.*
+					FROM	(
+								SELECT	*
+								FROM	QNA
+								WHERE	MBR_ID = #{id}
+								AND		PARENT_REPLY_ID = '0'
+								<if test="searchKeyword != null and searchType != null">
+								AND		(
+										<if test="searchType == 'replyId'">
+											UPPER(REPLY_ID) LIKE UPPER('%' || #{searchKeyword} || '%')
+										</if>
+										<if test="searchType == 'eduId'">
+											UPPER(EDU_ID) LIKE UPPER('%' || #{searchKeyword} || '%')
+										</if>
+										<if test="searchType == 'description'">
+											UPPER(DESCRIPTION) LIKE UPPER('%' || #{searchKeyword} || '%')
+										</if>
+										)
+								</if>
+								<if test="startDate != null and startDate != ''">
+								AND		CREATED_DATE >= #{startDate}
+								</if>
+								<if test="endDate != null and endDate != ''">
+								AND		CREATED_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+								</if>
+								ORDER	BY REPLY_ID DESC
+							) QNA
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) Q
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+
+	<select id="getSelectedQNA" parameterType="string" resultType="QNAVO">
+		SELECT		REPLY_ID replyId
+					, EDU_ID eduId
+					, PARENT_REPLY_ID parentReplyId
+					, ORDER_NO orderNo
+					, DESCRIPTION description
+					, MBR_ID mbrId
+					, LIKE_CNT likeCnt
+					, DISLIKE_CNT dislikeCnt
+					, CREATED_DATE createdDate
+		FROM		QNA
+		WHERE		REPLY_ID = #{replyId}
+	</select>
+	
+	<select id="getSelectedQNAAnswer" parameterType="string" resultType="QNAVO">
+		SELECT		REPLY_ID replyId
+					, EDU_ID eduId
+					, PARENT_REPLY_ID parentReplyId
+					, ORDER_NO orderNo
+					, DESCRIPTION description
+					, MBR_ID mbrId
+					, LIKE_CNT likeCnt
+					, DISLIKE_CNT dislikeCnt
+					, CREATED_DATE createdDate
+		FROM		QNA
+		WHERE		PARENT_REPLY_ID = #{replyId}
+	</select>
+	
+	<select id="exportQNAListAsExcel" parameterType="string" resultType="QNAVO">
+		SELECT		Q.REPLY_ID replyId
+					, Q.EDU_ID eduId
+					, Q.PARENT_REPLY_ID parentReplyId
+					, Q.ORDER_NO orderNo
+					, Q.DESCRIPTION description
+					, Q.MBR_ID mbrId
+					, Q.LIKE_CNT likeCnt
+					, Q.DISLIKE_CNT dislikeCnt
+					, Q.CREATED_DATE createdDate
+					, NVL ( (
+						SELECT	DISTINCT 'Y'
+						FROM	QNA
+						WHERE	PARENT_REPLY_ID = Q.REPLY_ID
+					 ) , 'N' ) isAnswered
+		FROM	QNA Q
+		WHERE	Q.MBR_ID = #{memberId}
+		AND		Q.PARENT_REPLY_ID = '0'
+		ORDER	BY Q.REPLY_ID ASC
+	</select>
+	
+	<select id="getApplyHistory" parameterType="map" resultType="EduClassVO">
+		SELECT	EDU_CLASS_ID educationClassId
+				, EDU_ID educationId
+				, MBR_ID memberId
+				, STAT status
+		FROM	EDU_CLASS
+		WHERE	MBR_ID = #{ memberId }
+		AND		EDU_ID = #{ educationId }
+		AND		(STAT = 'EDU_JN_A'
+		OR		STAT = 'EDU_JN_C')
+	</select>
+
+	<insert id="doReReplyInsert" parameterType="QNAVO">
+		INSERT INTO QNA (
+						   REPLY_ID 
+						   , EDU_ID 
+						   , PARENT_REPLY_ID 
+						   , ORDER_NO 
+						   , DESCRIPTION 
+						   , MBR_ID 
+						   , CREATED_DATE
+						   ) 
+					VALUES ( 
+							 #{replyId},
+							 #{eduId},
+							 #{parentReplyId},
+							 '4',
+							 #{description},
+							 #{mbrId},
+							 SYSDATE
+							 )			
+	</insert>
+
+	<select id="getEmail" parameterType="string" resultType="string">
+		SELECT	EMAIL
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	
+	<select id="getNextReReplyEval" resultType="_int">
+		SELECT 	REPEPLY_EVAL_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<update id="plusReReplyLike" parameterType="string">
+		UPDATE	QNA
+		SET		LIKE_CNT = LIKE_CNT+1
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+	
+	<insert id="insertReReplyEval" parameterType="ReRplyEvalVO">
+		INSERT INTO RERPLY_EVAL (
+								   REPLY_ID
+								   , MBR_ID
+								   , LIKE_CNT
+								   , DISLIKE_CNT
+								   , CREATED_DATE
+								   , REPLY_EVAL_ID
+							   	) 
+		VALUES					( 
+									#{replyId}
+									, #{mbrId}
+									, 'Y'
+							 		, 'N'
+							 		, SYSDATE
+							 		, #{replyEvalId}
+								)	
+								
+	</insert>
+	
+	<select id="checkReReplyEval" parameterType="ReRplyEvalVO" resultType="_int">
+		SELECT	COUNT(REPLY_EVAL_ID)
+		FROM	RERPLY_EVAL
+		WHERE	MBR_ID = #{mbrId}
+		AND		REPLY_ID = #{replyId}
+		AND		(LIKE_CNT = 'Y'
+		OR		DISLIKE_CNT = 'Y')
+	</select>
+	
+	<select id="getStartYear" resultType="string">
+		SELECT	SUBSTR(SDATE, 0, 4) SDATE
+		FROM	(
+                    SELECT  SRT_DATE SDATE
+                    FROM    EDU_INFO
+                    ORDER   BY SRT_DATE ASC
+                )
+		WHERE   ROWNUM = 1
+	</select>
+	
+	<select id="getEndYear" resultType="string">
+		SELECT	SUBSTR(EDATE, 0, 4) EDATE
+		FROM	(
+                    SELECT  END_DATE EDATE
+                    FROM    EDU_INFO
+                    ORDER   BY END_DATE DESC
+                )
+		WHERE   ROWNUM = 1
+	
+	</select>
+	
+	<insert id="insertReReplyEvalByDislike" parameterType="ReRplyEvalVO">
+		INSERT INTO RERPLY_EVAL (
+									   REPLY_ID
+									   , MBR_ID
+									   , LIKE_CNT
+									   , DISLIKE_CNT
+									   , CREATED_DATE
+									   , REPLY_EVAL_ID
+								   	) 
+		VALUES					( 
+										#{replyId}
+										, #{mbrId}
+										, 'N'
+								 		, 'Y'
+								 		, SYSDATE
+								 		, #{replyEvalId}
+									)
+	</insert>
+	
+	<update id="plusReReplyDislike" parameterType="string">
+		UPDATE	QNA
+		SET		DISLIKE_CNT = DISLIKE_CNT+1
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+	
+	<update id="doRequestRetraction" parameterType="map">
+		UPDATE	EDU_CLASS
+		SET		STAT = 'EDU_CL_A'
+		WHERE	EDU_ID = #{ educationId }
+		AND		MBR_ID = #{ memberId }
+	</update>
+	
+	<insert id="addRequestRetractionHistory">
+		INSERT INTO EDU_HTR (
+							   EDU_HTR_ID
+							   , EDU_ID
+							   , MBR_ID
+							   , EDU_HTR_DT
+							   , STAT
+							   , IP
+							   , CMNT
+							   , RATIO
+							) 
+		VALUES 				( 
+								EDU_HTR_ID_SEQ.NEXTVAL
+								, #{ educationId }
+								, #{ memberId }
+								, SYSDATE
+								, 'EDU_CL_A'
+								, #{ ip }
+								, #{ retractionMsg }
+								, 0
+							)
+	</insert>
+	
+	<delete id="doReReplyDelete" parameterType="QNAVO">
+		DELETE
+		FROM	QNA
+		WHERE	REPLY_ID = #{replyId}
+	</delete>
+	
+	<delete id="deleteReReplyEvalByDislike">
+		DELETE
+		FROM	RERPLY_EVAL
+		WHERE	REPLY_EVAL_ID = #{replyEvalId}
+	</delete>
+	
+	<delete id="deleteReReplyEval">
+		DELETE
+		FROM	RERPLY_EVAL
+		WHERE	REPLY_EVAL_ID = #{replyEvalId}
+	</delete>
+		
+	<select id="getTotalMemberNumber" parameterType="string" resultType="_int">
+		SELECT	COUNT(EDU_CLASS_ID)
+		FROM	EDU_CLASS
+		WHERE	EDU_ID = #{educationId}
+		AND		( STAT = 'EDU_JN_A'
+		OR		STAT = 'EDU_JN_C' )
+	</select>
+	
+	<update id="updateStateToApply" parameterType="string">
+		UPDATE	EDU_CLASS
+		SET		STAT = 'EDU_JN_A'
+		WHERE	(EDU_ID, MBR_ID) = (
+										SELECT	EDU_ID
+												, MBR_ID
+										FROM	(
+													SELECT  RE.STAT
+													        , RE.MBR_ID
+													        , RE.EDU_ID
+													        , HTR.EDU_HTR_DT
+													FROM    (
+													            SELECT  *
+													            FROM    EDU_CLASS CL
+													            WHERE   CL.STAT = 'EDU_RE_A'
+													            AND		CL.EDU_ID = #{educationId}
+													         ) RE
+													       	, EDU_HTR HTR
+													WHERE   HTR.EDU_ID = RE.EDU_ID
+													AND     HTR.MBR_ID = RE.MBR_ID
+													AND     HTR.STAT = RE.STAT
+													ORDER BY	HTR.EDU_HTR_DT ASC
+												)
+										WHERE	ROWNUM = 1
+					    			)
+	</update>
+	
+	<select id="getEducationFileBBSList" parameterType="FileBBSSearchVO" resultType="EducationFileBBSVO">
+		SELECT	B.ATC_ID articleId
+				, B.EDU_ID educationId
+				, B.MBR_ID memberId
+				, B.IS_DELETE isDelete
+				, B.TITLE title
+				, B.CONTENTS contents
+				, TO_CHAR(B.CREATE_DATE, 'YYYY-MM-DD') createDate
+				, TO_CHAR(B.MODIFY_DATE, 'YYYY-MM-DD') modifyDate
+				, B.HITS hits
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, BBS.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_FILE_BBS
+								WHERE	EDU_ID = #{educationId}
+								AND		IS_DELETE = 'N'
+								<if test="searchType != null and searchType != ''">
+									<if test="searchType == 'title'">
+										AND TITLE LIKE '%' || #{searchKeyword} || '%'
+									</if>
+									<if test="searchType == 'contents'">
+										AND CONTENTS LIKE '%' || #{searchKeyword} || '%'
+									</if>
+									<if test="searchType == 'date'">
+										<if test="startDate != null and startDate != ''">
+											AND CREATE_DATE >= #{startDate}
+										</if>
+										<if test="endDate != null and endDate != ''">
+											AND CREATE_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+										</if>
+									</if>
+									<if test="searchType == 'date'">
+										<if test="startDate != null and startDate != ''">
+											AND CREATE_DATE >= #{startDate}
+										</if>
+										<if test="endDate != null and endDate != ''">
+											AND CREATE_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+										</if>
+									</if>
+								</if>
+								ORDER	BY ATC_ID DESC
+							) BBS
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) B
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<select id="getArticleSEQ" resultType="string">
+		SELECT	ATC_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="getMemberIdByEducationId" resultType="string" parameterType="string">
+		SELECT	MBR_ID
+		FROM	EDU_INFO
+		WHERE	EDU_ID = #{educationId}
+	</select>
+	
+	<insert id="writeNewFileBBS" parameterType="EducationFileBBSVO">
+		INSERT	INTO SEMS.EDU_FILE_BBS (
+											ATC_ID
+											, EDU_ID
+											, MBR_ID
+											, TITLE
+											, CONTENTS
+											, CREATE_DATE
+										) 
+				VALUES 					(
+											#{articleId}
+											, #{educationId}
+											, #{memberId}
+											, #{title}
+											, #{contents}
+											, TO_CHAR(SYSDATE,'YYYY-MM-DD')
+										)
+	</insert>
+
+	<select id="getMyEducationList" parameterType="string" resultType="EducationVO">
+				SELECT	EI.EDU_ID educationId
+				, EI.EDU_TTL educationTitle
+				, EH.MBR_ID memberId
+				, EH.STAT status
+				, EI.SRT_DATE startDate
+				, EI.END_DATE endDate
+		FROM	EDU_INFO EI
+				, (
+					SELECT	EDU_CLASS_M.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_CLASS
+								WHERE	MBR_ID = #{memberId}
+								AND		STAT = 'EDU_JN_C'
+							) EDU_CLASS_M
+				) EH
+		WHERE	EI.EDU_ID = EH.EDU_ID
+		AND		EI.END_DATE <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+		ORDER BY EI.EDU_ID DESC
+	</select>
+
+	<select id="getAllMemberOfEducation" parameterType="string" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP memberType
+				, SALT salt
+				, LGI_F_CT loginFailCount
+				, IS_ACC_LCK isAccountLock
+				, TO_CHAR(LATEST_LGI_DT, 'YYYY-MM-DD') latestLoginDate
+				, RSN_DT resignDate
+				, RSN isResign
+				, MDF_F_CT modifyFailCount
+				, IS_MDF_LCK isModifyLock
+				, UUID uuid
+		FROM	MBR M
+				, EDU_HTR EH
+		WHERE	M.ID = EH.MBR_ID
+		AND		EH.EDU_ID = #{ educationId }
+	</select>
+	
+	<select id="getAllEducationQNAList" parameterType="EducationQNABBSSearchVO" resultType="EducationQNABBSVO">
+		SELECT	ATC_ID atcId
+				, EDU_ID eduId
+				, MBR_ID mbrId
+				, IS_DELETE isDelete
+				, TITLE title
+				, CONTENTS contents
+				, CREATE_DATE createDate
+				, MODIFY_DATE modifyDate
+				, HITS hits
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, BBS.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_QA_BBS
+								WHERE	ATC_ID LIKE 'AT%'
+								AND		EDU_ID = #{educationId}
+								<if test="searchKeyword != null and searchKeyword != ''">
+									<if test="searchType == 'selectTitleDesc'">
+								AND		TITLE LIKE '%' || #{searchKeyword} || '%'
+									</if>
+								</if>
+								<if test="searchKeyword != null and searchKeyword != ''">
+									<if test="searchType == 'selectMbrId'">
+								AND		MBR_ID LIKE '%' || #{searchKeyword} || '%'
+									</if>
+								</if>
+								ORDER	BY ATC_ID DESC
+							) BBS
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				)
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<insert id="addQNABBS" parameterType="EducationQNABBSVO">
+		INSERT INTO EDU_QA_BBS	(
+								   ATC_ID 
+								   , TITLE
+								   , CONTENTS
+								   , CREATE_DATE
+								   , MBR_ID
+								   , EDU_ID
+								) 
+						VALUES ( 
+								 #{atcId} 
+								 , #{title}
+								 , #{contents}
+								 , SYSDATE
+								 , #{mbrId}
+								 , #{eduId}
+								 )		
+	</insert>
+	
+	<select id="getAllEducationReportList" resultType="EducationReportVO" >
+		SELECT	ATC_ID articleId
+		        , EDU_ID educationId
+		        , MBR_ID memberId
+		        , TITLE title
+		        , CONTENTS contents
+		        , START_DATE startDate
+		        , END_DATE endDate
+		FROM	(
+		            SELECT	ROWNUM AS RNUM
+		                    , EDU_RPT_BBS.*
+		            FROM	(
+		                        SELECT	*
+		                        FROM	EDU_RPT_BBS
+		                        WHERE	EDU_ID = #{educationId}
+		                        <if test="searchKeyword != null and searchType != null">		
+									<if test="searchType == 'title'">
+									AND		TITLE LIKE '%' || #{searchKeyword} || '%'
+									</if>
+								</if>
+								<if test="searchType == 'startDate'">
+									<if test="startDate != null and startDate != ''">
+									AND		START_DATE >= #{startDate}
+									</if>
+									<if test="endDate != null and endDate != ''">
+									AND		START_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+									</if>
+								</if>
+								<if test="searchType == 'endDate'">
+									<if test="startDate != null and startDate != ''">
+									AND		END_DATE >= #{startDate}
+									</if>
+									<if test="endDate != null and endDate != ''">
+									AND		END_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+									</if>
+								</if>
+		                        ORDER	BY ATC_ID DESC
+		                    ) EDU_RPT_BBS
+		            WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+		        ) ERB
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<select id="getTotalEducationReportCount" parameterType="EducationReportSearchVO" resultType="_int">
+		SELECT  COUNT(ATC_ID)
+		FROM    EDU_RPT_BBS
+		WHERE	1=1
+        <if test="searchKeyword != null and searchType != null">		
+			<if test="searchType == 'title'">
+			AND		TITLE LIKE '%' || #{searchKeyword} || '%'
+			</if>
+		</if>
+		<if test="searchType == 'startDate'">
+			<if test="startDate != null and startDate != ''">
+			AND		START_DATE >= #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+			AND		START_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+			</if>
+		</if>
+		<if test="searchType == 'endDate'">
+			<if test="startDate != null and startDate != ''">
+			AND		END_DATE >= #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+			AND		END_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+			</if>
+		</if>
+	</select>
+	
+	<select id="getOneQNABBSByAtcId" parameterType="string" resultType="EducationQNABBSVO">
+		SELECT	ATC_ID atcId
+				, EDU_ID eduId
+				, MBR_ID mbrId
+				, IS_DELETE isDelete
+				, TITLE title
+				, CONTENTS contents
+				, CREATE_DATE createDate
+				, MODIFY_DATE modifyDate
+				, HITS hits
+		FROM	EDU_QA_BBS
+		WHERE	ATC_ID = #{atcId}
+		AND		ATC_ID LIKE 'AT%'
+	</select>
+	
+	<select id="getNextReportSeq" resultType="_int">
+		SELECT 	ATC_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>	
+	
+	<insert id="doReportWriteAction" parameterType="EducationReportVO">
+		INSERT	INTO EDU_RPT_BBS (
+									ATC_ID
+									, EDU_ID
+									, MBR_ID
+									, TITLE
+									, CONTENTS
+									, START_DATE
+									, END_DATE
+								 )
+		VALUES				     (
+									#{articleId}
+									, #{educationId}
+									, #{memberId}
+									, #{title}
+									, #{contents}
+									, TO_DATE(#{startDate}, 'YYYY-MM-DD HH24:MI')
+									, TO_DATE(#{endDate}, 'YYYY-MM-DD HH24:MI')
+								 )
+	</insert>
+	
+	<update id="addHitsByAtcId" parameterType="string">
+		UPDATE	EDU_QA_BBS
+		SET		HITS = HITS+1
+		WHERE	ATC_ID = #{atcId}
+	</update>
+	
+	<insert id="addQNAReply" parameterType="EducationQNAReplyVO">
+		INSERT INTO BBS_RPL (
+								   REPLY_ID 
+								   , ATC_ID 
+								   , PARENT_REPLY_ID 
+								   , ORDER_NO 
+								   , DESCRIPTION 
+								   , MBR_ID 
+								   , CREATED_DATE
+								   ) 
+						VALUES ( 
+								 #{replyId},
+								 #{atcId},
+								 '0',
+								 '4',
+								 #{description},
+								 #{mbrId},
+								 SYSDATE
+								 )
+	</insert>
+	
+	<select id="checkEndDate" parameterType="map" resultType="_int">
+		SELECT  COUNT(EDU_INFO.EDU_ID)
+		FROM    EDU_INFO
+        		, (
+			            SELECT  EDU_ID EI
+			            FROM    EDU_CLASS
+			            WHERE   MBR_ID = #{memberId}
+			            AND     STAT = 'EDU_RE_A'
+			        ) EDU_CLASS_EI
+		WHERE   EDU_INFO.EDU_ID = EDU_CLASS_EI.EI
+		AND		EDU_INFO.EDU_ID = #{educationId}
+		AND     EDU_INFO.END_DATE <![CDATA[<]]> TO_CHAR(SYSDATE, 'YYYY-MM-DD')
+	</select>
+	
+	<select id="getTotalReportReplyCount" parameterType="ReportReplySearchVO" resultType="_int">
+		 SELECT COUNT(*)
+		 FROM  RPT_RPL 
+               ,(
+                SELECT  EDU_RPT_BBS.*
+                        ,EDU_INFO.EDU_TTL   
+                FROM    EDU_RPT_BBS
+                   	    ,EDU_INFO
+                WHERE   EDU_RPT_BBS.EDU_ID IN 
+                		(SELECT EDU_ID
+		                FROM    EDU_CLASS
+		                WHERE   MBR_ID = #{mbrId}
+		                AND     STAT = 'EDU_JN_C')
+		                AND     EDU_RPT_BBS.EDU_ID = EDU_INFO.EDU_ID
+                )EDU_RPT_BBS
+         WHERE   EDU_RPT_BBS.ATC_ID = RPT_RPL.BBS_ID (+)
+		 <if test="eduNameKeyword != null">
+			AND		EDU_RPT_BBS.EDU_TTL LIKE '%' || #{eduNameKeyword} || '%'
+		</if>
+        <if test="eduNameKeyword == null">
+			AND		EDU_RPT_BBS.EDU_TTL LIKE '%%'
+		</if>
+		<if test="reportNameKeyword !=null">
+			AND		TITLE LIKE '%' || #{reportNameKeyword} || '%'
+		</if>
+		<if test="reportNameKeyword !=null">
+			AND		TITLE LIKE '%%'
+		</if>
+		<if test="startDate != null and startDate != ''">
+			AND		CREATE_DATE >= #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			AND		CREATE_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+		</if>
+		
+	</select>
+	
+	<select id="getAllReportReply" parameterType="ReportReplySearchVO" resultType="ReportReplyVO">
+		 SELECT  	EDI.ATC_ID		atcId
+		            , EDI.TITLE		title
+		            , EDI.EDU_ID	eduId
+		            , EDI.EDU_TTL	eduTtl
+		            , EDI.RPT_RPL_ID	rptRplId
+		            , EDI.CREATE_DATE	createdDate
+		 FROM    (
+		            SELECT ROWNUM AS RNUM
+		                   , EDI_T.*
+		            FROM   (
+                   		             SELECT EDU_RPT_BBS.ATC_ID
+                   		             		, EDU_RPT_BBS.EDU_TTL
+                   		             		, EDU_RPT_BBS.TITLE
+                   		             		, EDU_RPT_BBS.EDU_ID
+                   		             		, RPT_RPL.CREATE_DATE
+                   		             		, RPT_RPL.RPT_RPL_ID
+						             FROM   RPT_RPL 
+				                            ,(
+					                             SELECT EDU_RPT_BBS.*
+					                                    , EDU_INFO.EDU_TTL   
+					                             FROM 	EDU_RPT_BBS
+					                                	, EDU_INFO
+					                             WHERE  EDU_RPT_BBS.EDU_ID IN 
+							                             (
+							                             SELECT EDU_ID
+							                             FROM    EDU_CLASS
+							                             WHERE  MBR_ID = #{mbrId}
+							                             AND    STAT = 'EDU_JN_C'
+							                             )
+				                            	 AND    EDU_RPT_BBS.EDU_ID = EDU_INFO.EDU_ID
+				                             ) EDU_RPT_BBS
+				                     WHERE   EDU_RPT_BBS.ATC_ID = RPT_RPL.BBS_ID (+)
+									<if test="eduNameKeyword != null">
+										AND		EDU_RPT_BBS.EDU_TTL LIKE '%' || #{eduNameKeyword} || '%'
+									</if>
+						             <if test="eduNameKeyword == null">
+										AND		EDU_RPT_BBS.EDU_TTL LIKE '%%'
+									</if>
+									<if test="reportNameKeyword !=null">
+										AND		TITLE LIKE '%' || #{reportNameKeyword} || '%'
+									</if>
+									<if test="reportNameKeyword !=null">
+										AND		TITLE LIKE '%%'
+									</if>
+									<if test="startDate != null and startDate != ''">
+										AND		CREATE_DATE >= #{startDate}
+									</if>
+									<if test="endDate != null and endDate != ''">
+										AND		CREATE_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+									</if>
+	                     ) EDI_T
+                    WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+		            ) EDI
+		 WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<select id="getTotalReportReplyCountOfTeacher" parameterType="ReportReplySearchVO" resultType="_int">
+		SELECT  COUNT(*)
+		FROM    EDU_RPT_BBS ERB
+		        , RPT_RPL RR
+		        , EDU_INFO EI
+		        , MBR M
+		WHERE   ERB.ATC_ID = RR.BBS_ID
+		AND     ERB.EDU_ID = EI.EDU_ID
+		AND     RR.MBR_ID = M.ID
+		AND     ERB.MBR_ID = #{ mbrId }
+		<if test="memberNameKeyword != null">
+		AND     M.NM LIKE '%' || #{ memberNameKeyword } || '%'
+		</if>
+		<if test="eduNameKeyword != null">
+		AND     EI.EDU_TTL LIKE '%' || #{ eduNameKeyword } || '%' 
+		</if>
+		<if test="teamNameKeyword != null">
+		AND     EI.EDU_ID IN (
+		                        SELECT  EDU_ID
+		                        FROM    TEAM
+		                        WHERE   TEAM.TEAM_NM LIKE '%' || #{ teamNameKeyword } || '%'
+		                     )
+		</if>
+	</select>
+	
+	<select id="getAllReportReplyOfTeacher" parameterType="ReportReplySearchVO" resultType="ReportReplyVO">
+		SELECT  MBR_ID mbrId
+		        , MBR_NM memberName
+		        , EDU_ID eduId
+		        , EDU_TTL eduTtl
+		        , RPT_ID atcId
+		        , RPT_NM title
+		        , CREATE_DATE createdDate
+		FROM    (
+		            SELECT  ROWNUM RNUM
+		                    , TRRPT.*
+		            FROM    (
+		                        SELECT  M.ID MBR_ID
+		                                , M.NM MBR_NM
+		                                , EI.EDU_ID EDU_ID
+		                                , EI.EDU_TTL EDU_TTL
+		                                , ERB.ATC_ID RPT_ID
+		                                , ERB.TITLE RPT_NM
+		                                , RR.CREATE_DATE CREATE_DATE
+		                        FROM    EDU_RPT_BBS ERB
+		                                , RPT_RPL RR
+		                                , EDU_INFO EI
+		                                , MBR M
+		                        WHERE   ERB.ATC_ID = RR.BBS_ID
+		                        AND     ERB.EDU_ID = EI.EDU_ID
+		                        AND     RR.MBR_ID = M.ID
+		                        AND     ERB.MBR_ID = #{ mbrId }
+		                        <if test="memberNameKeyword != null">
+		                        AND     M.NM LIKE '%' || #{ memberNameKeyword } || '%'
+		                        </if>
+		                        <if test="eduNameKeyword != null">
+		                        AND     EI.EDU_TTL LIKE '%' || #{ eduNameKeyword } || '%' 
+		                        </if>
+		                        <if test="teamNameKeyword != null">
+		                        AND     EI.EDU_ID IN (
+		                                                SELECT  EDU_ID
+		                                                FROM    TEAM
+		                                                WHERE   TEAM.TEAM_NM LIKE '%' || #{ teamNameKeyword } || '%'
+		                                             )
+		                        </if>
+		                        ORDER   BY RR.CREATE_DATE DESC
+		                    ) TRRPT
+		        )
+		WHERE   RNUM <![CDATA[<=]]> #{ endIndex }
+		AND     RNUM <![CDATA[>=]]> #{ startIndex }
+	</select>
+	
+	<select id="getOneEducationReport" parameterType="EducationReportVO" resultType="EducationReportVO">
+		SELECT	ATC_ID articleId
+				,EDU_ID educationId
+				, MBR_ID memberId
+				, TITLE title
+				, CONTENTS contents
+				, TO_CHAR(START_DATE, 'YYYY-MM-DD HH24:MI') startDate
+				, TO_CHAR(END_DATE, 'YYYY-MM-DD HH24:MI') endDate
+		FROM	EDU_RPT_BBS
+		WHERE	ATC_ID = #{articleId}
+	</select>
+	
+	<select id="getAllQNAReplyListByAtcId" parameterType="EducationQNAReplySearchVO" resultType="EducationQNAReplyVO">
+		SELECT	REPLY_ID replyId
+				, ATC_ID atcId
+				, PARENT_REPLY_ID parentReplyId
+				, ORDER_NO orderNo
+				, DESCRIPTION description
+				, MBR_ID mbrId
+				, LIKE_CNT likeCnt
+				, DISLIKE_CNT dislikeCnt
+				, TO_CHAR(CREATED_DATE, 'YYYY-MM-DD HH24:MI') createdDate
+				, (1.5*LIKE_CNT)-(DISLIKE_CNT) AS qnaReplyPoint
+				, ADT_RPL adtRpl
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, RPL.*
+					FROM 	(
+								SELECT	*
+								FROM	BBS_RPL
+								WHERE	ATC_ID = #{atcId}
+								AND		REPLY_ID LIKE 'ER%'
+								ORDER	BY	REPLY_ID DESC	
+							) RPL
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}		
+		
+				)
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getNextReportReplySeq" resultType="_int">
+		SELECT 	RPT_RPL_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>	
+	
+	<insert id="doReportSubmit" parameterType="ReportReplyVO">
+		INSERT INTO SEMS.RPT_RPL (
+								   BBS_ID
+								   , CREATE_DATE
+								   , MBR_ID
+								   , RPT_RPL_ID
+								) 
+								VALUES ( 
+									#{bbsId}
+									, SYSDATE
+									, #{mbrId}
+									, #{rptRplId} 
+									)
+	</insert>
+	
+	 <select id="getReportReplyCount" parameterType = "string" resultType="_int">
+   		SELECT 	COUNT(*)	
+		FROM	RPT_RPL
+		WHERE 	BBS_ID = #{articleId}
+    </select>
+    
+    <select id="getAllReportByArticleId" parameterType="map" resultType="ReportReplyVO">
+    	SELECT	RPT_RPL_ID rptRplId
+    			, MBR_ID mbrId
+    			, BBS_ID bbsId
+    			, CREATE_DATE createdDate
+    			, FILE_NM fileName
+    	FROM    (
+		    	SELECT  ROWNUM AS RNUM
+		    			, RPT_RPL.*
+		    			FROM(
+					    	SELECT	RPT_RPL_ID
+					    			, MBR_ID
+					    			, BBS_ID
+					    			, CREATE_DATE
+					    			, FILE_NM
+					    	FROM	RPT_RPL
+					    			, FILES
+					    	WHERE	BBS_ID = #{articleId}
+					    	AND		RPT_RPL.RPT_RPL_ID = FILES.ATC_ID
+					    	ORDER   BY MBR_ID ASC
+					    	)RPT_RPL
+				    	WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+	    		)RPT_RPL
+    	WHERE	RNUM >= #{startIndex}
+    </select>
+	
+	<select id="getNowDateTime" resultType="string">
+		SELECT	TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI')
+		FROM	DUAL
+	</select>
+	
+	<select id="getEducationFileBBSCount" parameterType="FileBBSSearchVO" resultType="_int">
+		SELECT	COUNT(ATC_ID)
+		FROM	EDU_FILE_BBS
+		WHERE	EDU_ID = #{educationId}
+		<if test="searchType == 'title'">
+			AND TITLE LIKE '%' || #{searchKeyword} || '%'
+		</if>
+		<if test="searchType == 'contents'">
+			AND CONTENTS LIKE '%' || #{searchKeyword} || '%'
+		</if>
+		<if test="searchType == 'date'">
+			<if test="startDate != null and startDate != ''">
+				AND CREATE_DATE >= #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND CREATE_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+			</if>
+		</if>
+		<if test="searchType == 'date'">
+			<if test="startDate != null and startDate != ''">
+				AND CREATE_DATE >= #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND CREATE_DATE <![CDATA[<]]> TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1
+			</if>
+		</if>
+	</select>
+	
+	<select id="getOneEducationFileBBS" resultType="EducationFileBBSVO" parameterType="string">
+		SELECT	ATC_ID articleId
+				, EDU_ID educationId
+				, MBR_ID memberId
+				, IS_DELETE isDelete
+				, TITLE title
+				, CONTENTS contents
+				, CREATE_DATE createDate
+				, MODIFY_DATE modifyDate
+				, HITS hits
+		FROM	EDU_FILE_BBS
+		WHERE	ATC_ID = #{articleId}
+	</select>
+	
+	<select id="isExistedHitMemberIdByArtileId" resultType="string" parameterType="BBSHistoryVO">
+		SELECT	MBR_ID memberId
+		FROM	BBS_HTR
+		WHERE	BBS_ID = #{bbsId}
+		AND		MBR_ID = #{memberId}
+	</select>
+	
+	<select id="getTotalEducationQNACount" parameterType="EducationQNABBSSearchVO" resultType="_int">
+		SELECT	COUNT(ATC_ID)
+		FROM	EDU_QA_BBS
+		WHERE	ATC_ID LIKE 'AT%'
+		<if test="searchKeyword != null and searchKeyword != ''">
+			<if test="searchType == 'selectTitleDesc'">
+		AND		TITLE LIKE '%' || #{searchKeyword} || '%'
+			</if>
+		</if>
+		<if test="searchKeyword != null and searchKeyword != ''">
+			<if test="searchType == 'selectMbrId'">
+		AND		MBR_ID LIKE '%' || #{searchKeyword} || '%'
+			</if>
+		</if>
+	</select>
+	
+	<select id="getJCEduHistoryCount" parameterType="EducationHistorySearchVO" resultType="_int">
+		SELECT	COUNT(*)
+		FROM	EDU_HTR
+		WHERE	EDU_HTR.STAT = 'EDU_JN_C'
+		<if test="searchKeyword != null and searchKeyword != ''">
+			<if test ="searchType == 'educationName'">
+			AND		EDU_HTR.EDU_ID IN 	(
+											SELECT	EDU_INFO.EDU_ID
+											FROM	EDU_INFO
+											WHERE	EDU_INFO.EDU_TTL LIKE '%'||#{searchKeyword}||'%'
+								)
+			</if>
+			<if test ="searchType == 'memberId'">
+				AND EDU_HTR.MBR_ID LIKE '%'||#{searchKeyword}||'%'
+			</if>
+		</if>
+		<if test="searchDate != null and searchDate != ''">
+			<if test="searchType == 'date'">
+					AND	 TO_CHAR( EDU_HTR.EDU_HTR_DT , 'YYYY-MM-DD')  =  #{searchDate}		
+			</if>
+		</if>
+ 	</select>
+	
+	<select id="getJCEduHistoryHistory" parameterType="EducationHistorySearchVO" resultType="EducationHistoryVO">
+ 		SELECT	JCE_HTR.EDU_HTR_ID educationHistoryId
+				, JCE_HTR.EDU_TTL educationTitle
+				, 	JCE_HTR.MBR_ID memberId
+				, 	JCE_HTR.EDU_HTR_DT educationHistoryDate
+				, 	JCE_HTR.STAT state
+				, 	JCE_HTR.IP ip
+				, 	JCE_HTR.CMNT cmnt
+				, 	JCE_HTR.FDBK fdbk
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, EDU_HTR_KEYWORD.*
+					FROM	(
+									SELECT	EDU_HTR.*, EDU_INFO.EDU_TTL
+									FROM	EDU_HTR
+											, EDU_INFO
+									WHERE	EDU_HTR.EDU_ID = EDU_INFO.EDU_ID
+									AND		STAT = 'EDU_JN_C'
+									<if test="searchKeyword != null and searchKeyword != ''">
+										<if test ="searchType == 'educationName'">
+										AND		EDU_HTR.EDU_ID IN 	(
+																		SELECT	EDU_INFO.EDU_ID
+																		FROM	EDU_INFO
+																		WHERE	EDU_INFO.EDU_TTL LIKE '%'||#{searchKeyword}||'%'
+															)
+										</if>
+										<if test ="searchType == 'memberId'">
+											AND EDU_HTR.MBR_ID LIKE '%'||#{searchKeyword}||'%'
+										</if>
+									</if>
+									<if test="searchDate != null and searchDate != ''">
+										<if test="searchType == 'date'">
+												AND	 TO_CHAR( EDU_HTR.EDU_HTR_DT , 'YYYY-MM-DD')  =  #{searchDate}		
+										</if>
+									</if>
+							) EDU_HTR_KEYWORD
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) JCE_HTR
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<update id="modifyReport" parameterType="EducationReportVO">
+		UPDATE	EDU_RPT_BBS
+		SET		ATC_ID	= #{articleId}
+		<if test="title != null and title != ''">
+				, TITLE = #{title}
+		</if>
+		<if test="contents != null and contents != ''">
+				, CONTENTS = #{contents}
+		</if>
+		<if test="startDate != null and startDate != ''">
+				, START_DATE = TO_DATE(#{startDate}, 'YYYY-MM-DD HH24:MI')
+		</if>
+		<if test="endDate != null and endDate != ''">
+				, END_DATE = TO_DATE(#{endDate}, 'YYYY-MM-DD HH24:MI')
+		</if>
+		WHERE	ATC_ID = #{articleId}
+	</update>
+	
+	<delete id="deleteReport" parameterType="EducationReportVO">
+		DELETE
+		FROM	EDU_RPT_BBS
+		WHERE	ATC_ID	= #{articleId}
+	</delete>
+	
+	<delete id="deleteEducationHistoryByMemberId" parameterType="string">
+		DELETE
+		FROM	EDU_HTR
+		WHERE	MBR_ID	= #{memberId}
+	</delete>
+	
+	<select id="reportCheckEndDate" parameterType="string" resultType="string">
+		SELECT  *
+		FROM    EDU_RPT_BBS
+		WHERE   ATC_ID = #{articleId}
+		AND     END_DATE <![CDATA[>]]> SYSDATE
+	</select>
+	
+	<select id="getTotalQNAReplyCountByAtcId" parameterType="string" resultType="_int">
+		SELECT	COUNT(REPLY_ID)
+		FROM	BBS_RPL
+		WHERE	ATC_ID = #{atcId}
+		AND		REPLY_ID LIKE 'ER%'
+		AND		ATC_ID LIKE 'AT%'
+	</select>
+	
+	<update id="plusRecommendReply" parameterType="string">
+		UPDATE	BBS_RPL
+		SET		LIKE_CNT = LIKE_CNT+1
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+
+	<update id="plusOpposeReply" parameterType="string">
+		UPDATE	BBS_RPL
+		SET		DISLIKE_CNT = DISLIKE_CNT+1
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+	
+	<update id="updateAdoptReply" parameterType="string">
+		UPDATE	BBS_RPL
+		SET		ADT_RPL = 'Y'
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+	
+	<select id="checkAdoptReply" parameterType="string" resultType="_int">
+		SELECT	COUNT(ADT_RPL) 
+		FROM	BBS_RPL
+		WHERE	REPLY_ID = #{replyId} 
+		AND		ADT_RPL = 'Y'
+	</select>
+	
+	<select id="getBBSHistorySeq" resultType="_int">
+		SELECT	BBS_HTR_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<update id="addHitsEducationFileBBSByArticleId" parameterType="string">
+		UPDATE	EDU_FILE_BBS
+		SET		HITS = HITS + 1
+		WHERE  ATC_ID = #{articleId}
+	</update>
+	
+	<insert id="addBBSHistoryHitByArticleId" parameterType="BBSHistoryVO">
+		INSERT	INTO BBS_HTR	(
+									BBS_HTR_ID
+									, MBR_ID
+									, BBS_ID
+								)
+		VALUES					(
+									#{bbsHistoryId}
+									, #{memberId}
+									, #{bbsId}
+								)
+	</insert>
+	
+	<select id="getEducationClassMember" resultType="string" parameterType="map">
+		SELECT	DISTINCT(MBR_ID)
+		FROM	EDU_CLASS
+		WHERE	MBR_ID = #{memberId}
+		AND		EDU_ID = #{educationId}
+	</select>
+	
+	<select id="getEducationClassTeacherByArticleId" resultType="string" parameterType="string">
+		SELECT	MBR_ID
+		FROM	EDU_FILE_BBS
+		WHERE	ATC_ID = #{articleId}
+		AND		MBR_ID = #{memberId}
+	</select>
+	
+	<select id="getEducationIdByFileBBSArticleId" resultType="string" parameterType="string">
+		SELECT	EDU_ID
+		FROM	EDU_FILE_BBS
+		WHERE	ATC_ID = #{articleId}
+	</select>
+	
+	<select id="getTotalEduQnaCount" parameterType="EduQnaSearchVO" resultType="_int" >
+		SELECT	COUNT(ATC_ID)
+		FROM	EDU_QA_BBS
+		<if test="searchType == 1 and searchType != null">
+		WHERE	MBR_ID = #{searchKeyword}
+		AND		EDU_ID = #{educationId}
+		AND		ATC_ID LIKE '%'||'EQ'||'%'
+		</if>
+		<if test="searchType == 2 and searchType != null">
+		WHERE	TITLE = #{searchKeyword}
+		AND		EDU_ID = #{educationId}
+		AND		ATC_ID LIKE '%'||'EQ'||'%'
+		</if>
+		<if test="searchType == null">
+		WHERE	EDU_ID = #{educationId}
+		AND		ATC_ID LIKE '%'||'EQ'||'%'
+		</if>
+		ORDER	BY	ATC_ID DESC
+	</select>
+	
+	<select id="getAllEduQna" parameterType="EduQnaSearchVO" resultType="EduQnaVO">
+		 SELECT ATC_ID eduQnaId
+		 		, EDU_ID educationId
+		 		, IS_DELETE isDelete
+		 		, MBR_ID memberId
+		 		, TITLE title
+		 		, CONTENTS contents
+		 		, CREATE_DATE createDate
+		 		, MODIFY_DATE modifyDate
+		 		, HITS hits
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, EDU_QNA.*
+					FROM	(
+								SELECT	*
+								FROM	EDU_QA_BBS
+								<if test="searchType == 1 and searchType != null">
+								WHERE	MBR_ID LIKE '%'||#{searchKeyword}||'%'
+								AND		EDU_ID = #{educationId}
+								AND		ATC_ID LIKE '%'||'EQ'||'%'
+								</if>
+								<if test="searchType == 2 and searchType != null">
+								WHERE	TITLE LIKE '%'||#{searchKeyword}||'%'
+								AND		EDU_ID = #{educationId}
+								AND		ATC_ID LIKE '%'||'EQ'||'%'
+								</if>
+								<if test="searchType == null">
+								WHERE	EDU_ID = #{educationId}
+								AND		ATC_ID LIKE '%'||'EQ'||'%'
+								</if>
+								ORDER	BY ATC_ID
+							)EDU_QNA
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				)
+		WHERE	RNUM <![CDATA[>=]]> #{startIndex}
+	</select>
+	
+	<select id="confirmMemberOfEdu" parameterType="map" resultType="_int">
+		SELECT	COUNT(EDU_CLASS_ID)
+		FROM	EDU_CLASS
+		WHERE	EDU_ID = #{educationId}
+		AND		MBR_ID = #{memberId}
+		AND		STAT = 'EDU_JN_C'
+	</select>
+	
+	<select id="nextEqbSeq" resultType="_int">
+		SELECT	ATC_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="getNextEduBrdHtrId" resultType="_int">
+		SELECT	EDU_BRD_HTR_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<insert id="insertEduQna" parameterType="EduQnaVO">
+		INSERT INTO EDU_QA_BBS	(
+								   ATC_ID
+								   , EDU_ID
+								   , MBR_ID
+								   , TITLE
+								   , CONTENTS
+								   , CREATE_DATE
+								) 
+		VALUES					( 
+									#{eduQnaId}
+									, #{educationId}
+									, #{memberId}
+									, #{title}
+									, #{contents}
+									, SYSDATE
+								
+								 )
+	</insert>
+	
+	<select id="detailOfEduQna" parameterType="string" resultType="EduQnaVO">
+		SELECT	ATC_ID eduQnaId
+				, EDU_ID educationId
+				, MBR_ID memberId
+				, TITLE title
+				, CONTENTS contents
+				, CREATE_DATE createDate
+				, HITS hits
+		FROM	EDU_QA_BBS
+		WHERE	ATC_ID = #{eduQnaId}
+	</select>
+	
+	<update id="addHitsToEduQna" parameterType="string">
+		UPDATE	EDU_QA_BBS
+		SET		HITS = HITS + 1
+		WHERE	ATC_ID = #{eduQnaId}
+	</update>
+	
+	<update id="addQnaEduReplyLike" parameterType="string">
+		UPDATE	BBS_RPL
+		SET		LIKE_CNT = LIKE_CNT+1
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+	
+	<update id="addQnaEduReplyDisLike" parameterType="string">
+		UPDATE	BBS_RPL
+		SET		DISLIKE_CNT = DISLIKE_CNT+1
+		WHERE	REPLY_ID = #{replyId}
+	</update>
+	
+	<select id="getTotalQnaEduReplyCount" parameterType="string" resultType="_int">
+		SELECT	COUNT(REPLY_ID)
+		FROM	BBS_RPL
+		WHERE	ATC_ID = #{atcId}
+		AND		REPLY_ID LIKE 'ER%'
+		AND		ATC_ID LIKE 'EQ%'
+	</select>
+	
+	<insert id="writeFileBBSReply" parameterType="BBSReplyVO">
+		INSERT	INTO BBS_RPL	(
+									REPLY_ID
+									, ATC_ID
+									, PARENT_REPLY_ID
+									, ORDER_NO
+									, DESCRIPTION
+									, MBR_ID
+									, LIKE_CNT
+									, DISLIKE_CNT
+									, CREATED_DATE
+								) 
+		VALUES					(
+									#{replyId}
+									, #{articleId}
+									<if test="parentReplyId != null">
+									, #{parentReplyId}
+									</if>
+									<if test="parentReplyId == null">
+									, '0'
+									</if>
+									, #{orderNo}
+									, #{description}
+									, #{memberId}
+									, '0'
+									, '0'
+									, SYSDATE
+								)
+	</insert>
+	
+	<select id="getAllBBSReplyByArticle" resultType="BBSReplyVO" parameterType="BBSReplySearchVO">
+		SELECT	R.REPLY_ID replyId
+				, R.ATC_ID articleId
+				, R.PARENT_REPLY_ID parentReplyId
+				, R.ORDER_NO orderNo
+				, R.DESCRIPTION description
+				, R.MBR_ID memberId
+				, R.LIKE_CNT likeCount
+				, R.DISLIKE_CNT dislikeCount
+				, R.CREATED_DATE createdDate
+		FROM	(
+					SELECT	ROWNUM AS RNUM
+							, RP.*
+					FROM	(
+								SELECT	*
+								FROM	BBS_RPL
+								WHERE	ATC_ID = #{articleId}
+								START	WITH PARENT_REPLY_ID = '0'
+								CONNECT	BY PRIOR REPLY_ID = PARENT_REPLY_ID
+							) RP
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) R
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getTotalFileBBSReplyCountByArticleId" parameterType="string" resultType="_int">
+		SELECT	COUNT(REPLY_ID)
+		FROM	BBS_RPL
+		WHERE	ATC_ID = #{articleId}
+	</select>
+	
+	<select id="getNextOrderNo" parameterType="string" resultType="_int">
+		SELECT	(MAX(ORDER_NO) + 1) orderNo
+		FROM	BBS_RPL
+		WHERE	REPLY_ID = #{parentReplyId}
+		OR		PARENT_REPLY_ID = #{parentReplyId}
+	</select>
+	
+	<update id="deleteFileBBSByArticleId" parameterType="string">
+		UPDATE	EDU_FILE_BBS
+		SET		IS_DELETE = 'Y'
+		WHERE	ATC_ID = #{articleId}
+	</update>
+	
+	<update id="modifyFileBBS" parameterType="EducationFileBBSVO">
+		UPDATE	EDU_FILE_BBS
+		SET		TITLE = #{title}
+				, CONTENTS = #{contents}
+				, MODIFY_DATE = SYSDATE
+		WHERE	ATC_ID = #{articleId}
+		AND		MBR_ID = #{memberId}
+	</update>
+	
+	<insert id="insertEduBBSAccess" parameterType="EducationBoardHistoryVO">
+		INSERT INTO SEMS.EDU_BRD_HTR (
+  										 EDU_BRD_HTR_ID
+  										 , MBR_ID
+  										 , ACS_DT
+  										 , EDU_ID
+  									) 
+		VALUES 						( 
+										#{educationBoardHistoryId}
+										, #{memberId}
+										, SYSDATE
+										, #{educationId}
+									)
+	</insert>
+	
+	<select id="getEduBBSAccessMemberList" parameterType="string" resultType="string">
+		SELECT		M.NM
+        FROM 		EDU_BRD_HTR EBH
+             		, MBR M
+        WHERE 		ACS_DT = 
+        						(
+				                    SELECT MAX(ACS_DT) 
+				                    FROM EDU_BRD_HTR 
+				                    WHERE MBR_ID = EBH.MBR_ID
+			                    )
+        AND EDU_ID = #{educationId}
+        AND EBH.MBR_ID = M.ID
+        AND ROWNUM <![CDATA[<=]]> 10
+	</select>
+	
+	 <insert id="insertEducationState" parameterType="map">
+    	INSERT	INTO	EDU_CLASS(
+									EDU_CLASS_ID
+									, EDU_ID
+									, MBR_ID
+									, STAT
+								) 
+						VALUES	( 
+									EDU_CLASS_ID_SEQ.NEXTVAL
+									, #{educationId}
+									, #{memberId}
+									, 'EDU_JN_A'
+							 	)
+   	</insert>
+   	
+   	 <insert id="insertEduStateToReserve" parameterType="map">
+    	INSERT	INTO	EDU_CLASS(
+									EDU_CLASS_ID
+									, EDU_ID
+									, MBR_ID
+									, STAT
+								) 
+						VALUES	( 
+									EDU_CLASS_ID_SEQ.NEXTVAL
+									, #{educationId}
+									, #{id}
+									, 'EDU_RE_A'
+							 	)
+   	</insert>
+   	
+   	<select id="getAllEduFileNotice" parameterType="EduNoticeSearchVO" resultType="EduNoticeVO">
+		SELECT	IMP_ATC_ID eduNoticeId
+				, EDU_ID educationId
+				, MBR_ID memberId
+				, IS_DELETE isDelete
+				, TITLE title
+				, CONTENTS contents
+				, TO_CHAR(CREATE_DATE,'YYYY-MM-DD') createDate
+				, TO_CHAR(MODIFY_DATE,'YYYY-MM-DD') modifyDate
+				, HITS hits
+				, IMP_TP noticeType
+		FROM	IMP_ATC
+		WHERE	IS_DELETE = 'N' 
+		AND     ((EDU_ID =  #{educationId}  AND IMP_TP ='normal') OR IMP_TP ='important')
+		ORDER	BY IMP_ATC_ID
+		
+	</select>
+	
+	<select id="getOneNotice" parameterType="String" resultType="EduNoticeVO" >
+		SELECT	IMP_ATC_ID eduNoticeId
+		        , EDU_ID educationId
+		        , MBR_ID memberId
+		        , IS_DELETE isDelete
+		        , TITLE title
+		        , CONTENTS contents
+		        , CREATE_DATE createDate
+		        , MODIFY_DATE modifyDate
+		        , HITS hits
+		        , IMP_TP noticeType
+		FROM	IMP_ATC
+		WHERE	IMP_ATC_ID =  #{eduNoticeId} 
+		
+	</select>
+	
+	<update id="addhits" parameterType="String">
+		UPDATE	IMP_ATC
+		SET		HITS = HITS +1
+		WHERE	IMP_ATC_ID = #{eduNoticeId} 
+	</update>
+	
+	<select id="getOneEduNoticeId" resultType="string">
+		SELECT  IMP_ATC_ID
+		FROM    IMP_ATC
+		WHERE   ROWNUM=1
+	</select>
+	
+	<select id="getOneEducationId" resultType="string">
+		SELECT  EDU_ID
+		FROM    EDU_INFO
+		WHERE   ROWNUM=1
+	</select>
+</mapper>

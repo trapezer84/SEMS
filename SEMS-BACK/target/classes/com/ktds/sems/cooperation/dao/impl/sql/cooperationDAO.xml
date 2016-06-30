@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CooperationDAO" >
+
+	
+	<select id="nextCooSeq" resultType="_int">
+		SELECT	COO_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="nowDate" resultType="string">
+		SELECT	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		FROM	DUAL
+	</select>
+	
+	<insert id="doRegisterCoo" parameterType="cooperationVO">
+		INSERT INTO COO_INFO (
+		                       COO_ID
+		                       , COO_TTL
+		                       , COO_LOC
+		                       , COO_NMB
+		                       , REP_NM
+		                       , MGR_PH
+		                       , COO_PH
+		                       , MGR_EMAIL
+		                       , COO_TP
+		                     ) 
+		VALUES              (
+								#{cooperationId}
+								, #{cooperationTitle}
+								, #{cooperationLocation}
+								, #{cooperationNumber}
+								, #{representativeName}
+								, #{managerPhoneNumber}
+								, #{cooperationPhoneNumber}
+								, #{managerEmail}
+								, #{cooperationType}
+		                    )
+	</insert>
+	
+	<select id="isExistCooperationTitle" parameterType="string" resultType="string">
+		SELECT	COO_TTL
+		FROM	COO_INFO
+		WHERE   COO_TTL = #{cooperationTitle}
+		AND		ROWNUM=1
+	</select>
+	
+	<select id="getTotalCooperationCount" parameterType="CooperationSearchVO" resultType="_int" >
+		SELECT	COUNT(COO_ID)
+		FROM	COO_INFO CI
+				, CODE_MNG CM
+		WHERE	CI.COO_TP = CM.CD_ID
+		<if test="searchType == 1 and searchType != null">
+			AND	UPPER(COO_TTL) LIKE UPPER('%'||#{searchKeyword}||'%')
+		</if>
+		<if test="searchType == 2 and searchType != null">
+			AND	COO_TP LIKE '%'||#{searchTypeName}||'%'
+		</if>
+	</select>
+	
+	<select id="getAllCooperation" parameterType="CooperationSearchVO" resultType="CooperationVO" >
+		SELECT 	COO_ID cooperationId
+				, COO_TTL cooperationTitle
+				, COO_LOC cooperationLocation
+				, COO_NMB cooperationNumber
+				, REP_NM representativeName
+				, MGR_PH managerPhoneNumber
+				, COO_PH cooperationPhoneNumber
+				, MGR_EMAIL managerEmail
+				, CD_NM cooperationType
+		FROM 	(
+					SELECT	ROWNUM AS RNUM
+							, COO_INFO.*
+					FROM	(
+								SELECT	*
+								FROM	COO_INFO CI
+                                        , CODE_MNG CM
+                                WHERE   CI.COO_TP = CM.CD_ID  
+                                <if test="searchType == 1 and searchType != null">
+								AND   UPPER(COO_TTL) LIKE UPPER('%'||#{searchKeyword}||'%')
+								</if>
+								<if test="searchType == 2 and searchType != null">
+								AND   COO_TP LIKE '%'||#{searchTypeName}||'%'
+								</if>                          
+								ORDER	BY COO_ID DESC
+							) COO_INFO
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				)
+		WHERE	RNUM >= #{startIndex}
+	</select>
+	
+	<select id="getOneCooperation" parameterType="string" resultType="CooperationVO" >
+		SELECT 	COO_ID cooperationId
+				, COO_TTL cooperationTitle
+				, COO_LOC cooperationLocation
+				, COO_NMB cooperationNumber
+				, REP_NM representativeName
+				, MGR_PH managerPhoneNumber
+				, COO_PH cooperationPhoneNumber
+				, MGR_EMAIL managerEmail
+				, COO_TP cooperationType
+		FROM	COO_INFO
+		WHERE	COO_ID = #{cooperationId}
+	</select>
+	
+	<delete id="doDeleteCooperation" parameterType="string" >
+		DELETE
+		FROM	COO_INFO
+		WHERE	COO_ID = #{cooperationId}
+	</delete>
+	
+	<update id="doModifyCoo" parameterType="CooperationVO">
+		UPDATE	COO_INFO
+		SET		COO_ID    = #{cooperationId}
+				<if test="cooperationTitle != null">
+				, COO_TTL   = #{cooperationTitle}
+				</if>
+				<if test="cooperationLocation != null">
+		       	, COO_LOC   = #{cooperationLocation}
+		       	</if>
+		       	<if test="cooperationNumber != null">
+		       	, COO_NMB   = #{cooperationNumber}
+		       	</if>
+		       	<if test="representativeName != null">
+		       	, REP_NM    = #{representativeName}
+		       	</if>
+		       	<if test="managerPhoneNumber != null">
+		       	, MGR_PH    = #{managerPhoneNumber}
+		       	</if>
+		       	<if test="cooperationPhoneNumber != null">
+		      	, COO_PH    = #{cooperationPhoneNumber}
+		      	</if>
+		       	<if test="managerEmail != null">
+		      	, MGR_EMAIL = #{managerEmail}
+		      	</if>
+		       	<if test="cooperationType != null">
+		      	, COO_TP    = #{cooperationType}
+		      	</if>
+		WHERE  COO_ID    = #{cooperationId}
+	</update>
+	
+	<select id="getCooTypeList" resultType="CooperationTypeVO">
+		SELECT	CD_ID codeId
+				, CD_NM codeName
+		FROM	CODE_MNG
+		WHERE	CD_TP = 'COO'
+		AND		CD_TP_2 = 'TYP'
+	</select>
+	
+	<select id="getOneCooperationId" resultType="string">
+		SELECT  COO_ID
+		FROM    COO_INFO
+		WHERE   ROWNUM=1
+	</select>
+
+</mapper>

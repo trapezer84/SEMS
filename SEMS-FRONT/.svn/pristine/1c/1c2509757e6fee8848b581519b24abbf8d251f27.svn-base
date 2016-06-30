@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<mvc:annotation-driven />
+	<mvc:resources location="/WEB-INF/resources/" mapping="/resources/**" />
+
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<!-- 모든 페이지에서 세션이 끊겨 있으면 root로 이동 -->
+			<mvc:mapping path="/**" />
+			<mvc:exclude-mapping path="/" />
+			<mvc:exclude-mapping path="/loginPage" />
+			<mvc:exclude-mapping path="/login" />
+			<mvc:exclude-mapping path="/checkRegistState" />
+			<mvc:exclude-mapping path="/register/policy" />
+			<mvc:exclude-mapping path="/register/teacher" />
+			<mvc:exclude-mapping path="/register/student" />
+			<mvc:exclude-mapping path="/checkValidationById" />
+			<mvc:exclude-mapping path="/checkValidationByName" />
+			<mvc:exclude-mapping path="/checkValidationByUniversityName" />
+			<mvc:exclude-mapping path="/checkValidationByMajorName" />
+			<mvc:exclude-mapping path="/checkValidationByPassword" />
+			<mvc:exclude-mapping path="/checkValidationByRepeatPassword" />
+			<mvc:exclude-mapping path="/checkValidationByEmail" />
+			<mvc:exclude-mapping path="/checkValidationByPhoneNumber" />
+			<mvc:exclude-mapping path="/doRegisterMemberAction" />
+			<mvc:exclude-mapping path="/changePassword/*" />
+			<mvc:exclude-mapping path="/doChangePasswordAction" />
+			<mvc:exclude-mapping path="/checkPassword" />
+			<mvc:exclude-mapping path="/fabicon.ico" />
+			<mvc:exclude-mapping path="/resources/**" />
+			<bean id="sessionCheckInterceptor" class="com.ktds.sems.interceptor.SessionCheckInterceptor" />
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<!-- 로그인 시 권한 없으면 페이지 접근 불가 -->
+			<mvc:mapping path="/login" />
+			<bean id="loginCheckInterceptor" class="com.ktds.sems.interceptor.LoginCheckInterceptor" />
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<!-- 회원 로그인 시 특정 페이지(로그인, 회원가입 페이지) 접근 불가 -->
+			<mvc:mapping path="/register/**" />
+			<mvc:mapping path="/login" />
+			<mvc:mapping path="/loginPage" />
+			<mvc:mapping path="/checkValidationById" />
+			<mvc:mapping path="/checkValidationByName" />
+			<mvc:mapping path="/checkValidationByUniversityName" />
+			<mvc:mapping path="/checkValidationByMajorName" />
+			<mvc:mapping path="/checkValidationByPassword" />
+			<mvc:mapping path="/checkValidationByRepeatPassword" />
+			<mvc:mapping path="/checkValidationByEmail" />
+			<mvc:mapping path="/checkValidationByPhoneNumber" />
+			<mvc:mapping path="/doRegisterMemberAction" />
+			<bean id="invalidAccessInterceptor" class="com.ktds.sems.interceptor.InvalidAccessInterceptor" />
+		</mvc:interceptor>
+	</mvc:interceptors>
+
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/WEB-INF/view/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="1000000000"/>
+		<property name="maxInMemorySize" value="100000000" />
+	</bean>
+
+	<bean id="validator"
+		class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
+
+	<bean id="customExceptionHandler" class="com.ktds.sems.handler.CustomExceptionHandler" />
+
+	<bean id="memberController" class="com.ktds.sems.member.web.MemberController">
+		<property name="memberService" ref="memberService" />
+	</bean>
+
+	<bean id="educationController" class="com.ktds.sems.education.web.EducationController">
+		<property name="educationService" ref="educationService" />
+	</bean>
+	
+	<bean id="teamController" class="com.ktds.sems.team.web.TeamController">
+		<property name="teamService" ref="teamService" />
+	</bean>
+
+	<bean id="loggingListener" class="com.ktds.sems.common.LoggingListener">
+		<property name="memberDAO" ref="memberDAO" />
+	</bean>
+
+	<bean id="pcController" class="com.ktds.sems.pc.web.PcController">
+		<property name="pcService" ref="pcService" />
+	</bean>
+
+</beans>

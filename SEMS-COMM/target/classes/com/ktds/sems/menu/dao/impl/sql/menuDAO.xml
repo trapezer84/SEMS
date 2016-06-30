@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+					"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MenuDAO">
+	
+	
+	<select id="getMenuCategoryList" resultType="MenuManageVO">
+		SELECT	CD_ID codeId
+				, CD_NM codeName
+				, URL url
+				, SRT sort
+		FROM	MENU_MNG
+		ORDER 	BY SRT ASC
+	</select>
+	
+	<!-- <select id="getOneMenuCategory" parameterType="string" resultType="MenuManageVO">
+		SELECT	CD_ID codeId
+				, CD_NM codeName
+				, URL url
+				, SRT sort
+		FROM	MENU_MNG
+		WHERE	CD_ID = #{codeId}
+	</select> -->
+
+	<!-- <update id="doMenuUpdate" parameterType="MenuManageVO">
+		UPDATE	MENU_MNG
+		SET		SRT = #{sort}
+		WHERE	CD_ID = #{codeId}
+	</update> -->
+	
+	<update id="upMenuList" parameterType="map">
+		UPDATE	MENU_MNG
+		SET		SRT = SRT - 1
+		<if test="next != null">
+			WHERE	SRT = #{next}
+		</if>
+		<if test="next == null">
+			WHERE	SRT = #{sortNumber}
+			AND		CD_ID = #{codeId}
+		</if>
+	</update>
+	
+	<update id="downMenuList" parameterType="map">
+		UPDATE	MENU_MNG
+		SET		SRT = SRT + 1
+		<if test="prev != null">
+			WHERE	SRT = #{prev}	
+		</if>
+		<if test="prev == null">
+			WHERE	SRT = #{sortNumber}
+			AND		CD_ID = #{codeId}
+		</if>
+	</update>
+	
+</mapper>

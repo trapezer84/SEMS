@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+		
+<!-- 현재 articleDAO의 이름 앞에 첫 글자는 대문자로 적는다. 패키지의 일종이다 -->
+<mapper namespace="MemberDAO">
+
+	<!-- 로그인 -->
+	<select id="isExistId" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	<select id="isAccountLock" parameterType="string" resultType="string">
+		SELECT	IS_ACC_LCK
+		FROM	MBR
+		WHERE	ID = #{id}
+	</select>
+	<update id="loginSuccess" parameterType="string">
+		UPDATE	MBR
+		SET		LGI_F_CT = 0
+				, IS_ACC_LCK = 'N'
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	<select id="needToChangPassword" parameterType="string" resultType="string">
+		SELECT	'Y'
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		(SYSDATE - LATEST_LGI_DT) >= 30
+	</select>
+	<update id="plusLoginFailCount" parameterType="string">
+		UPDATE	MBR
+		SET		LGI_F_CT = LGI_F_CT + 1
+				, LATEST_LGI_DT = SYSDATE
+		WHERE	ID = #{id}
+	</update>
+	<update id="updateAccountLock" parameterType="string">
+		UPDATE	MBR
+		SET		IS_ACC_LCK = 'Y'
+		WHERE	ID = #{id}
+		AND		LGI_F_CT >= 5
+	</update>
+	<select id="getSaltById" parameterType="string" resultType="string">
+		SELECT	SALT salt
+		FROM	MBR
+		WHERE	ID = #{ id }
+	</select>
+	<select id="login" parameterType="MemberVO" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP memberType
+				, SALT salt
+				, LGI_F_CT loginFailCount
+				, IS_ACC_LCK isAccountLock
+				, TO_CHAR(LATEST_LGI_DT, 'YYYY-MM-DD') latestLoginDate
+				, RSN_DT resignDate
+				, RSN isResign
+				, MDF_F_CT modifyFailCount
+				, IS_MDF_LCK isModifyLock
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		PWD = #{password}
+	</select>
+	<select id="isResign" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	ID = #{id}
+		AND		RSN = 'Y'
+	</select>
+	<insert id="stampLoginTime" parameterType="LoginHistoryVO">
+		INSERT INTO LGI_HTR	(
+								LGI_HTR_ID
+								, MBR_ID
+								, LGI_IP
+								, LGI_DT
+							) 
+		VALUES				(
+								#{ lgiHtrId }
+								, #{ id }
+								, #{ lgiIp }
+								, SYSDATE
+		 					)
+	</insert>
+	<select id="nextLoginHistorySeq" resultType="_int">
+		SELECT	LGI_HTR_ID_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	<update id="stampLogoutTime" parameterType="LoginHistoryVO">
+		UPDATE	LGI_HTR	
+		SET		LGO_DT = SYSDATE
+		WHERE	LGI_HTR_ID = #{lgiHtrId}
+	</update>
+
+	<select id="getAllAdminHistory" parameterType="LoginHistorySearchVO" resultType="LoginHistoryVO">
+		SELECT	HIS.LGI_HTR_ID lgiHtrId
+				, HIS.LGI_IP lgiIp
+				, HIS.LGI_DT lgiDt
+				, HIS.LGO_DT lgoDt
+				, HIS.MBR_ID id
+				, HIS.CD_NM memberType
+		FROM	(
+					SELECT ROWNUM AS RNUM
+					, LGI.*
+				FROM	(
+							SELECT	LGI_HTR.*
+							FROM	(
+										SELECT	LGI_HTR.*, MBR_TP.CD_NM
+										FROM	LGI_HTR
+												, MBR
+												, MBR_TP
+										WHERE	MBR.MBR_TP = MBR_TP.CD_ID
+										AND		LGI_HTR.MBR_ID = MBR.ID
+									)LGI_HTR
+							WHERE	MBR_ID IN	(
+													SELECT	ID
+													FROM	MBR
+													WHERE	MBR_TP = 'ADM'
+												)
+						<if test="search != null and search != ''">
+						<if test="search == 'id'">
+							AND		LGI_HTR.MBR_ID LIKE '%'||#{searchKeyword}||'%'
+						</if>
+						</if>
+						<if test="search != null and search != ''">
+						<if test="search == 'date'">
+							AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')
+							AND		LGI_DT <![CDATA[<=]]> ( TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1 )
+						</if>
+						</if>
+							ORDER BY	LGI_HTR_ID DESC
+						)LGI
+				WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) HIS
+		WHERE   RNUM >= #{startIndex}
+	</select>
+
+	<select id="getTotalAdminHistoryCount" parameterType="loginHistorySearchVO" resultType="_int">
+		SELECT	COUNT(LGI_HTR_ID)
+		FROM	(
+					SELECT	LGI_HTR.*, MBR_TP.CD_NM
+					FROM	LGI_HTR, MBR, MBR_TP
+					WHERE	MBR.MBR_TP = MBR_TP.CD_ID
+					AND		LGI_HTR.MBR_ID = MBR.ID
+				)LGI_HTR
+		WHERE	MBR_ID IN	(
+								SELECT	ID
+								FROM	MBR
+								WHERE	MBR_TP ='ADM'
+							)
+	<if test="search != null and search != ''">
+	<if test="search == 'id'">
+		AND		LGI_HTR.MBR_ID LIKE '%'||#{searchKeyword}||'%'
+	</if>
+	</if>
+	<if test="search != null and search != ''">
+	<if test="search == 'date'">
+		AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')
+		AND		LGI_DT <![CDATA[<=]]> ( TO_DATE(#{endDate}, 'YYYY-MM-DD') + 1 )
+	</if>
+	</if>
+		ORDER BY	LGI_HTR_ID	DESC
+	</select>
+		  
+	<select id="getAllMemberHistory" parameterType="LoginHistorySearchVO" resultType="LoginHistoryVO">
+		 SELECT HIS.LGI_HTR_ID lgiHtrId
+		 		, HIS.LGI_IP lgiIp
+		 		, HIS.LGI_DT lgiDt
+		 		, HIS.LGO_DT lgoDt
+		 		, HIS.MBR_ID id
+		 		, HIS.CD_NM memberType
+	     FROM 	(
+	              SELECT ROWNUM AS RNUM
+	              ,LGI.*
+		          FROM   (
+		                        SELECT   LGI_HTR.*
+		                        FROM   (
+		                                  SELECT  LGI_HTR.*, MBR_TP.*
+		                                  FROM   LGI_HTR, MBR, MBR_TP
+		                                  WHERE   MBR.MBR_TP = MBR_TP.CD_ID
+		                                  AND     LGI_HTR.MBR_ID = MBR.ID
+		                                  )LGI_HTR 
+		                        WHERE   MBR_ID IN (
+		                                    SELECT   ID
+		                                    FROM   MBR
+		                                    WHERE   MBR_TP != 'ADM'
+		                                    )
+	                            <if test="search != null and search == 'id'">
+								AND		LGI_HTR.MBR_ID LIKE '%'||#{searchKeyword}||'%'
+								</if>
+								<if test="search != null and search == 'type'">
+								AND		LGI_HTR.CD_ID = #{searchType}
+								</if>
+								<if test="search != null and search == 'date'">
+								AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')		
+								AND		LGI_DT <![CDATA[<=]]> TO_DATE(#{endDate}, 'YYYY-MM-DD')
+								</if>
+		                        ORDER   BY   LGI_HTR_ID  DESC
+		                )    LGI
+	             	WHERE   ROWNUM <![CDATA[<=]]> #{endIndex}
+	        ) HIS
+	        WHERE   RNUM >= #{startIndex}   
+	</select>
+	
+	<select id="getTotalMemberHistoryCount" parameterType="LoginHistorySearchVO" resultType="_int">
+		SELECT	COUNT(LGI_HTR_ID)
+		FROM	(
+                SELECT  LGI_HTR.*, MBR_TP.CD_ID
+                FROM   LGI_HTR, MBR, MBR_TP
+                WHERE   MBR.MBR_TP = MBR_TP.CD_ID
+                AND     LGI_HTR.MBR_ID = MBR.ID
+                )LGI_HTR   
+		WHERE	MBR_ID IN (
+						SELECT	ID
+						FROM	MBR
+						WHERE	MBR_TP != 'ADM'
+						)
+		<if test="search != null and search == 'id'">
+		AND		LGI_HTR.MBR_ID LIKE '%'||#{searchKeyword}||'%'
+		</if>
+		<if test="search != null and search == 'type'">
+		AND		LGI_HTR.CD_ID = #{searchType}
+		</if>
+		<if test="search != null and search == 'date'">
+		AND		LGI_DT <![CDATA[>=]]> TO_DATE(#{startDate}, 'YYYY-MM-DD')		
+		AND		LGI_DT <![CDATA[<=]]> TO_DATE(#{endDate}, 'YYYY-MM-DD')
+		</if>
+		ORDER	BY	LGI_HTR_ID  DESC
+	</select>
+	
+	<select id="getTotalMemberCount" resultType="_int">
+		SELECT 	COUNT(ID)
+		FROM	(
+				SELECT	MBR.*
+						, MBR_TP.CD_NM
+				FROM	MBR, MBR_TP
+				WHERE	MBR.MBR_TP = MBR_TP.CD_ID
+				<if test="searchKeyword != null and searchKeyword != '' ">
+				AND		(ID = #{searchKeyword}
+				OR		NM =  #{searchKeyword} )
+				</if>
+				<if test="searchType != null and searchType != '' ">
+				AND		MBR_TP = #{searchType}
+				</if>
+				<if test="connLock != null and connLock != '' ">
+				AND		MBR.IS_ACC_LCK = #{connLock}
+				</if>
+				<if test="isRgsn != null and isRgsn != '' ">
+				AND		MBR.RSN = #{isRgsn}
+				</if>
+				<if test="modLock != null and modLock != '' ">
+				AND		MBR.IS_MDF_LCK = #{modLock}
+				</if>
+				) MBR
+	</select>
+	
+	<select id="getAllMemberList" parameterType="MemberSearchVO" resultType="MemberVO">
+		SELECT	MBR.ID id
+				, MBR.NM name
+				, MBR_TP.CD_NM memberType
+				, MBR.IS_ACC_LCK isAccountLock
+				, MBR.RSN isResign
+				, MBR.IS_MDF_LCK isModifyLock
+		FROM	(
+					SELECT	ROWNUM RNUM
+							, MBR_INFO.*
+					FROM	(
+								SELECT	*
+								FROM	MBR
+								WHERE 1=1
+								<if test="searchKeyword != null and searchKeyword != '' ">
+								AND		(MBR.ID LIKE '%' || #{searchKeyword} || '%'
+								OR		MBR.NM LIKE '%' || #{searchKeyword} || '%'
+								)
+								</if>
+								<if test="searchType != null and searchType != '' ">
+								AND		MBR_TP = #{searchType}
+								</if>
+								<if test="connLock != null and connLock != '' ">
+								AND		MBR.IS_ACC_LCK = #{connLock}
+								</if>
+								<if test="isRgsn != null and isRgsn != '' ">
+								AND		MBR.RSN = #{isRgsn}
+								</if>
+								<if test="modLock != null and modLock != '' ">
+								AND		MBR.IS_MDF_LCK = #{modLock}
+								</if>
+								ORDER	BY ID DESC
+							) MBR_INFO
+					WHERE	ROWNUM <![CDATA[<=]]> #{endIndex}
+				) MBR
+				, MBR_TP
+		WHERE	MBR.MBR_TP = MBR_TP.CD_ID
+		AND		RNUM >= #{startIndex}		
+		ORDER	BY	ID  DESC
+	</select>
+	
+	<select id="isExistEmail" parameterType="string" resultType="string">
+		SELECT	ID
+		FROM	MBR
+		WHERE	EMAIL = #{email}
+	</select>
+	
+	<select id="getMemberDetailById" parameterType="string" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV.CD_NM highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP.CD_NM graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP.CD_NM memberType
+				, SALT salt
+				, LGI_F_CT loginFailCount
+				, IS_ACC_LCK isAccountLock
+				, LATEST_LGI_DT latestLoginDate
+				, RSN_DT resignDate
+				, RSN isResign
+				, MDF_F_CT modifyFailCount
+				, IS_MDF_LCK isModifyLock
+		FROM	MBR
+				, HIGHEST_EDU_LV
+				, GRDT_TP
+				, MBR_TP
+		WHERE	MBR.HIGHEST_EDU_LV = HIGHEST_EDU_LV.CD_ID(+)
+		AND		MBR.GRDT_TP = GRDT_TP.CD_ID(+)
+		AND		MBR.MBR_TP = MBR_TP.CD_ID
+		AND		ID = #{id}
+	</select>
+	
+	<select id="getHighestEducationLevelCodeNames" resultType="string">
+		SELECT	CD_NM cdNm
+		FROM	HIGHEST_EDU_LV
+	</select>
+	
+	<select id="getGraduationType" resultType="string">
+		SELECT	CD_NM cdNm	
+		FROM	GRDT_TP
+	</select>
+	
+	<insert id="addNewMember" parameterType="MemberVO">
+		INSERT INTO MBR	(
+							ID
+							, PWD
+							, NM
+							, EMAIL
+							<if test="memberType == 'MBR' or memberType == 'STD'">
+							, HIGHEST_EDU_LV
+							, UNIV_NM
+							, MJR_NM
+							, GRDT_TP
+							</if>
+							, BRTH_DT
+							, PHONE_NMB
+							, MBR_TP
+							, SALT
+							, LATEST_LGI_DT
+						)
+		VALUES 			( 
+							#{id}
+							, #{password}
+							, #{name}
+							, #{email}
+							<if test="memberType == 'MBR' or memberType == 'STD'">
+							, #{highestEducationLevel}
+							, #{universityName}
+							, #{majorName}
+							, #{graduationType}
+							</if>
+							, #{birthDate}
+							, #{phoneNumber}
+							, #{memberType}
+							, #{salt}
+							, SYSDATE
+						)
+	</insert>
+	
+	<select id="getHelCodeId" parameterType="string" resultType="string">
+		SELECT	CD_ID cdId
+		FROM	HIGHEST_EDU_LV
+		WHERE	CD_NM = #{highestEducationLevel}
+	</select>
+	
+	<select id="getGraduationTypeCodeId" parameterType="string" resultType="string">
+		SELECT	CD_ID cdId
+		FROM	GRDT_TP
+		WHERE	CD_NM = #{memberType}
+	</select>
+	
+	<select id="getMemberTypeCodeNameList" resultType="string">
+		SELECT	CD_NM cdNm
+		FROM	MBR_TP
+	</select>
+	
+	<select id="getMemberTypeCodeId" parameterType="string" resultType="string">
+		SELECT	CD_ID cdId
+		FROM	MBR_TP
+		WHERE	CD_NM = #{memberType}
+	</select>
+	
+	<delete id="massiveDeleteMember" parameterType="string">
+		DELETE
+		FROM	MBR
+		WHERE	ID = #{memberId}
+	</delete>
+	
+	<select id="getPersonalInfoIdSeq" resultType="_int">
+		SELECT	PRSN_INFO_RD_SEQ.NEXTVAL
+		FROM	DUAL
+	</select>
+	
+	<select id="getSysdate" resultType="string">
+		SELECT	TO_CHAR(SYSDATE, 'YYYYMMDD')
+		FROM	DUAL
+	</select>
+	
+	<insert id="doWriteMemberDetailInfo" parameterType="PersonalInfoReadVO">
+		INSERT INTO 	PRSN_INFO_RD (
+   										ID
+   										, MBR_ID
+   										, TRGT_MBR_ID
+   										, RD_DATE
+   										, DESCRIPTION
+   									) 
+		VALUES 						( 
+										#{id}
+										, #{memberId}
+										, #{targetMemberId}
+										, SYSDATE
+										, #{description}
+									)
+	</insert>
+	
+	<select id="getTargetMemberEmail" parameterType="string" resultType="string">
+		SELECT	EMAIL
+		FROM	MBR
+		WHERE	ID = #{targetMemberId}
+	</select>
+
+	<update id="changePassword" parameterType="MemberVO">
+		UPDATE	MBR
+		SET		SALT = #{salt}
+				, PWD = #{password}
+				, LATEST_LGI_DT = SYSDATE
+				, MDF_F_CT = 0
+				, IS_MDF_LCK = 'N'
+				, LGI_F_CT = 0
+				, IS_ACC_LCK = 'N'
+		WHERE	ID = #{id}
+	</update>	
+	
+	<select id="getMemberType" resultType="string">
+		SELECT	CD_NM
+		FROM	MBR_TP
+	</select>
+	
+	<select id="getMemberTypeCode" resultType="string" parameterType="string">
+		SELECT	CD_ID
+		FROM	MBR_TP
+		WHERE	CD_NM = #{memberType}
+	</select>
+	
+	<update id="modifyMemberTypeById" parameterType="map">
+		UPDATE	MBR
+		SET		MBR_TP = #{memberTypeId}
+		WHERE	ID = #{memberId}
+	</update>
+
+	<select id="getTypeList" resultType="MemberTypeVO">
+		SELECT	DISTINCT CD_NM cdNm, CD_ID cdId
+		FROM	MBR_TP
+		WHERE	CD_ID != 'ADM'
+	</select>
+
+	<select id="getOneMember" parameterType="string" resultType="MemberVO">
+		SELECT	ID id
+				, PWD password 
+				, NM name
+				, EMAIL email
+				, HIGHEST_EDU_LV highestEducationLevel
+				, UNIV_NM universityName
+				, MJR_NM majorName
+				, GRDT_TP graduationType
+				, BRTH_DT birthDate
+				, PHONE_NMB phoneNumber
+				, MBR_TP memberType
+				, UUID uuid
+		FROM	MBR
+		WHERE	ID = #{memberId}
+	</select>
+	
+	<select id="getGraduationTypes"	resultType="GraduationTypeVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	GRDT_TP
+	</select>
+		
+	<select id="getHighestEducationLevels"	resultType="HighestEducationLevelVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	HIGHEST_EDU_LV
+	</select>
+		
+	<select id="getMemberTypes"	resultType="MemberTypeVO">
+		SELECT	CD_ID cdId
+				, CD_NM cdNm
+		FROM	MBR_TP
+	</select>
+	<delete id="deleteMemberDetailInfo" parameterType="string">
+		DELETE
+		FROM	PRSN_INFO_RD
+		WHERE	MBR_ID = #{memberId}
+	</delete>
+	<select id="getMemberInfo" parameterType="string" resultType="MemberVO">
+		SELECT ID id, 
+			   NM name, 
+			   EMAIL email,
+			   MBR_TP memberType  
+		FROM   MBR
+		WHERE  ID = #{memberId}
+	</select>
+	
+</mapper>

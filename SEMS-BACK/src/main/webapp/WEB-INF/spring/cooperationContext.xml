@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="cooperationDAO"
+			class="com.ktds.sems.cooperation.dao.impl.CooperationDAOImpl">
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate" />		
+	</bean>
+	
+	<bean id="cooperationBiz"
+			class="com.ktds.sems.cooperation.biz.impl.CooperationBizImpl">
+		<property name="cooperationDAO" ref="cooperationDAO" />		
+	</bean>
+	
+	<bean id="cooperationService"
+			class="com.ktds.sems.cooperation.service.impl.CooperationServiceImpl">
+		<property name="cooperationBiz" ref="cooperationBiz" />		
+	</bean>
+
+</beans>
